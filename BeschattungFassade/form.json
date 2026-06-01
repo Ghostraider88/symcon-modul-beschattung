@@ -1,0 +1,319 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "caption": "This facade instance must be connected to a 'Beschattung Steuerung' parent instance (central values & cloud detection)."
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Sun position & sensors",
+            "items": [
+                {
+                    "type": "SelectVariable",
+                    "name": "AzimuthID",
+                    "caption": "Azimuth (location module)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "ElevationID",
+                    "caption": "Elevation (location module)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "BrightnessID",
+                    "caption": "Brightness sensor (lux, optional)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "OutdoorTempID",
+                    "caption": "Outdoor temperature (optional)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "IndoorTempID",
+                    "caption": "Indoor temperature (optional)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Orientation",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "FacadeDirection",
+                    "caption": "Facade direction (0=N, 90=E, 180=S, 270=W)",
+                    "suffix": "°",
+                    "minimum": 0,
+                    "maximum": 360
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ShadeAngleLeft",
+                    "caption": "Shading angle left",
+                    "suffix": "°",
+                    "minimum": 0,
+                    "maximum": 180
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ShadeAngleRight",
+                    "caption": "Shading angle right",
+                    "suffix": "°",
+                    "minimum": 0,
+                    "maximum": 180
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Geometry",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "RoofHeight",
+                    "caption": "Roof edge height above window sill reference",
+                    "suffix": "m",
+                    "digits": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "RoofOverhang",
+                    "caption": "Roof overhang",
+                    "suffix": "m",
+                    "digits": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "WindowSill",
+                    "caption": "Window sill height",
+                    "suffix": "m",
+                    "digits": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "EndAngle",
+                    "caption": "End angle (no shading above this elevation)",
+                    "suffix": "°",
+                    "minimum": 0,
+                    "maximum": 90
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Actuators & positions",
+            "items": [
+                {
+                    "type": "List",
+                    "name": "Actuators",
+                    "caption": "Actuators",
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "caption": "Actuator variable",
+                            "name": "ActuatorID",
+                            "width": "auto",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectVariable"
+                            }
+                        },
+                        {
+                            "caption": "Individual shade position (-1 = facade default)",
+                            "name": "ShadePosition",
+                            "width": "260px",
+                            "add": -1,
+                            "edit": {
+                                "type": "NumberSpinner",
+                                "suffix": "%",
+                                "minimum": -1,
+                                "maximum": 100
+                            }
+                        },
+                        {
+                            "caption": "Manual-lock variable (optional)",
+                            "name": "DisableID",
+                            "width": "260px",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectVariable"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ShadePosition",
+                    "caption": "Shade position (0 = open, 100 = closed)",
+                    "suffix": "%",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OpenPosition",
+                    "caption": "Open position",
+                    "suffix": "%",
+                    "minimum": 0,
+                    "maximum": 100
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Behaviour & safety",
+            "items": [
+                {
+                    "type": "Select",
+                    "name": "EveningBehavior",
+                    "caption": "At end of day",
+                    "options": [
+                        {
+                            "caption": "Open blinds",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Hold position",
+                            "value": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "Select",
+                    "name": "FailSafe",
+                    "caption": "On critical sensor failure",
+                    "options": [
+                        {
+                            "caption": "Hold position",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Open",
+                            "value": 1
+                        },
+                        {
+                            "caption": "Shade",
+                            "value": 2
+                        }
+                    ]
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "EvaluationInterval",
+                    "caption": "Evaluation interval (seconds)",
+                    "suffix": "s",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "SensorMaxAge",
+                    "caption": "Maximum sensor age before stale (seconds, 0 = off)",
+                    "suffix": "s",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "MeanTempDays",
+                    "caption": "Mean outdoor temperature over N days (0 = current value only)",
+                    "minimum": 0
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ManualDetection",
+                    "caption": "Detect manual operation and pause automation"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ManualTolerance",
+                    "caption": "Manual detection tolerance",
+                    "suffix": "%",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ManualPause",
+                    "caption": "Pause after manual operation (seconds)",
+                    "suffix": "s",
+                    "minimum": 0
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "EnableHTML",
+                    "caption": "Create HTML status display variable"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "EnableProtocol",
+                    "caption": "Create protocol variable"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Reserved (wind / rain – not yet active)",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "These inputs are reserved for a future wind/rain safety function. They are currently not evaluated."
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "WindID",
+                    "caption": "Wind variable (reserved)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "RainID",
+                    "caption": "Rain variable (reserved)"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Evaluate now",
+            "onClick": "BSFAS_Evaluate($id);"
+        },
+        {
+            "type": "Button",
+            "caption": "Test: shade",
+            "onClick": "BSFAS_TestMove($id, true);"
+        },
+        {
+            "type": "Button",
+            "caption": "Test: open",
+            "onClick": "BSFAS_TestMove($id, false);"
+        },
+        {
+            "type": "Button",
+            "caption": "Reset lock time",
+            "onClick": "BSFAS_ResetLock($id);"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Active"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Inactive / no central instance"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "Sun position source invalid"
+        },
+        {
+            "code": 202,
+            "icon": "error",
+            "caption": "Critical sensor invalid or stale"
+        }
+    ]
+}

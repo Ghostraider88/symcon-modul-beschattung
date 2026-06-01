@@ -1,0 +1,41 @@
+{
+    "translations": {
+        "de": {
+            "Central values (time window, thresholds, lock time, global automation) are maintained as status variables and can be changed at runtime via the visualisation. Other systems can read and write them there.": "Die zentralen Werte (Zeitfenster, Schwellwerte, Sperrzeit, globale Automatik) werden als Statusvariablen geführt und können zur Laufzeit über die Visualisierung geändert werden. Andere Systeme können dort lesend und schreibend zugreifen.",
+            "Cloud detection": "Wolkenerkennung",
+            "Central brightness sensor (lux)": "Zentraler Helligkeitssensor (Lux)",
+            "Sunny threshold (lux)": "Sonnig-Schwelle (Lux)",
+            "Change tolerance (lux)": "Wechseltoleranz (Lux)",
+            "Observation window (minutes)": "Beobachtungszeitraum (Minuten)",
+            "Activate after N changes": "Aktivieren ab N Wechseln",
+            "Deactivate below N changes": "Deaktivieren unter N Wechseln",
+            "Calculation interval (seconds)": "Berechnungsintervall (Sekunden)",
+            "End of day / sunset": "Tagesende / Sonnenuntergang",
+            "Use sunset as end of day (instead of fixed 'latest' time)": "Sonnenuntergang als Tagesende verwenden (statt fester „spätestens\"-Zeit)",
+            "Sunset variable (location module)": "Sonnenuntergangs-Variable (Standortmodul)",
+            "Reliability": "Zuverlässigkeit",
+            "Maximum sensor age before considered stale (seconds, 0 = off)": "Maximales Sensoralter, bevor als veraltet gewertet (Sekunden, 0 = aus)",
+            "Recalculate cloud detection now": "Wolkenerkennung jetzt neu berechnen",
+            "Reset central values to defaults": "Zentrale Werte auf Standard zurücksetzen",
+            "Earliest": "Frühestens",
+            "Latest": "Spätestens",
+            "Lock time": "Sperrzeit",
+            "Brightness threshold (on)": "Helligkeitsschwelle (Ein)",
+            "Brightness threshold (off)": "Helligkeitsschwelle (Aus)",
+            "Outdoor temperature threshold (on)": "Außentemperatur-Schwelle (Ein)",
+            "Outdoor temperature threshold (off)": "Außentemperatur-Schwelle (Aus)",
+            "All-around shading temperature": "Rundumbeschattungs-Temperatur",
+            "Indoor temperature minimum": "Innentemperatur Minimum",
+            "Indoor temperature maximum": "Innentemperatur Maximum",
+            "Automation (global)": "Automatik (global)",
+            "Alternative mode active": "Alternativmodus aktiv",
+            "Sunshine percentage": "Sonnenscheinanteil",
+            "Brightness changes": "Helligkeitswechsel",
+            "Alternative mode activated (fluctuating light).": "Alternativmodus aktiviert (wechselhaftes Licht).",
+            "Alternative mode ended (light stabilised).": "Alternativmodus beendet (Licht stabil).",
+            "Central values reset to defaults.": "Zentrale Werte auf Standard zurückgesetzt.",
+            "Active": "Aktiv",
+            "Inactive": "Inaktiv"
+        }
+    }
+}

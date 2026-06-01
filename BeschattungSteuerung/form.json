@@ -1,0 +1,112 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "caption": "Central values (time window, thresholds, lock time, global automation) are maintained as status variables and can be changed at runtime via the visualisation. Other systems can read and write them there."
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Cloud detection",
+            "items": [
+                {
+                    "type": "SelectVariable",
+                    "name": "CloudBrightnessID",
+                    "caption": "Central brightness sensor (lux)"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudSunnyThreshold",
+                    "caption": "Sunny threshold (lux)",
+                    "suffix": "lx",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudChangeTolerance",
+                    "caption": "Change tolerance (lux)",
+                    "suffix": "lx",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudWindowMinutes",
+                    "caption": "Observation window (minutes)",
+                    "suffix": "min",
+                    "minimum": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudChangeLimitOn",
+                    "caption": "Activate after N changes",
+                    "minimum": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudChangeLimitOff",
+                    "caption": "Deactivate below N changes",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudInterval",
+                    "caption": "Calculation interval (seconds)",
+                    "suffix": "s",
+                    "minimum": 0
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "End of day / sunset",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "UseSunsetAsLatest",
+                    "caption": "Use sunset as end of day (instead of fixed 'latest' time)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "SunsetID",
+                    "caption": "Sunset variable (location module)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Reliability",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "SensorMaxAge",
+                    "caption": "Maximum sensor age before considered stale (seconds, 0 = off)",
+                    "suffix": "s",
+                    "minimum": 0
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Recalculate cloud detection now",
+            "onClick": "BSTRG_ComputeCloudDetection($id);"
+        },
+        {
+            "type": "Button",
+            "caption": "Reset central values to defaults",
+            "onClick": "BSTRG_ResetDefaults($id);"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Active"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Inactive"
+        }
+    ]
+}
