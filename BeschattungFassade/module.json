@@ -4,13 +4,10 @@
     "type": 3,
     "vendor": "Beschattung",
     "aliases": [
-        "Beschattung Fenster",
-        "Shading Facade"
+        "Beschattung Fenster"
     ],
     "url": "https://github.com/Ghostraider88/symcon-modul-beschattung",
-    "parentRequirements": [
-        "{BF94CC45-3455-4ADD-8668-E1E6AAC44498}"
-    ],
+    "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
     "prefix": "BSFAS"

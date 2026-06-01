@@ -2,7 +2,12 @@
     "elements": [
         {
             "type": "Label",
-            "caption": "This facade instance must be connected to a 'Beschattung Steuerung' parent instance (central values & cloud detection)."
+            "caption": "Select the central 'Beschattung Steuerung' instance below (central values & cloud detection)."
+        },
+        {
+            "type": "SelectInstance",
+            "name": "CentralID",
+            "caption": "Central instance (Beschattung Steuerung)"
         },
         {
             "type": "ExpansionPanel",

@@ -1,7 +1,7 @@
 # Beschattung Steuerung
 
-Zentrale Instanz (Splitter) der Beschattungs-Bibliothek. Sie wird **einmal** angelegt
-und ist die übergeordnete Instanz für beliebig viele **Beschattung Fassade**-Instanzen.
+Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beliebig viele
+**Beschattung Fassade**-Instanzen wählen sie in ihrem Formular als „Zentrale Instanz" aus.
 
 ## Funktionsumfang
 

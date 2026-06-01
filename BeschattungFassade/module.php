@@ -24,9 +24,14 @@ class BeschattungFassade extends IPSModuleStrict
     private const FAILSAFE_OPEN = 1;
     private const FAILSAFE_SHADE = 2;
 
+    private const STEUERUNG_GUID = '{6D18227C-1720-4002-BDB0-071DB6B0C384}';
+
     public function Create(): void
     {
         parent::Create();
+
+        // --- Zentrale Steuerungs-Instanz ---
+        $this->RegisterPropertyInteger('CentralID', 0);
 
         // --- Sonnenstand (Standortmodul) ---
         $this->RegisterPropertyInteger('AzimuthID', 0);
@@ -135,8 +140,8 @@ class BeschattungFassade extends IPSModuleStrict
         $this->SetTimerInterval('EvalTimer', $interval * 1000);
 
         // --- Status ---
-        if ($this->getParentID() === 0) {
-            $this->SetStatus(104); // keine Steuerung verbunden
+        if ($this->getCentralID() === 0) {
+            $this->SetStatus(104); // keine Steuerung ausgewählt
         } elseif (!$this->variableValid($this->ReadPropertyInteger('AzimuthID'))
             || !$this->variableValid($this->ReadPropertyInteger('ElevationID'))) {
             $this->SetStatus(201); // Sonnenstandsquelle fehlt
@@ -587,23 +592,31 @@ class BeschattungFassade extends IPSModuleStrict
     }
 
     // ------------------------------------------------------------------
-    // Zentrale Daten / Parent
+    // Zentrale Daten / Steuerung
     // ------------------------------------------------------------------
 
-    private function getParentID(): int
+    /** ID der ausgewählten Steuerungs-Instanz (0 = keine/ungültig). */
+    private function getCentralID(): int
     {
-        $instance = @IPS_GetInstance($this->InstanceID);
-        return is_array($instance) ? (int) $instance['ConnectionID'] : 0;
+        $id = $this->ReadPropertyInteger('CentralID');
+        if ($id <= 0 || !@IPS_InstanceExists($id)) {
+            return 0;
+        }
+        $instance = @IPS_GetInstance($id);
+        if (!is_array($instance) || ($instance['ModuleInfo']['ModuleID'] ?? '') !== self::STEUERUNG_GUID) {
+            return 0;
+        }
+        return $id;
     }
 
     private function getCentralData(): ?array
     {
-        $parentID = $this->getParentID();
-        if ($parentID === 0) {
+        $centralID = $this->getCentralID();
+        if ($centralID === 0) {
             return null;
         }
         try {
-            $raw = BSTRG_GetCentralData($parentID);
+            $raw = BSTRG_GetCentralData($centralID);
         } catch (\Throwable $e) {
             $this->SendDebug(__FUNCTION__, 'Fehler beim Lesen der Steuerung: ' . $e->getMessage(), 0);
             return null;
@@ -719,10 +732,11 @@ HTML;
             }
         }
 
-        // zentrale Wolken-Variable der Steuerung beobachten (falls verbunden)
-        $parentID = $this->getParentID();
-        if ($parentID > 0) {
-            $cloudID = @IPS_GetObjectIDByIdent('CloudMode', $parentID);
+        // ausgewählte Steuerung referenzieren und ihre zentrale Wolken-Variable beobachten
+        $centralID = $this->getCentralID();
+        if ($centralID > 0) {
+            $this->RegisterReference($centralID);
+            $cloudID = @IPS_GetObjectIDByIdent('CloudMode', $centralID);
             if ($cloudID !== false && $cloudID > 0) {
                 $this->RegisterMessage($cloudID, VM_UPDATE);
             }

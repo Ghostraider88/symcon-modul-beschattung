@@ -1,8 +1,8 @@
 # Beschattung Fassade
 
 Gerätemodul für die automatische Beschattung **einer Fassade / Fenstergruppe**. Es wird
-pro Fassade einmal angelegt und mit einer übergeordneten **Beschattung Steuerung**-Instanz
-verbunden (zentrale Werte & Wolkenerkennung).
+pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
+**Beschattung Steuerung**-Instanz ausgewählt (zentrale Werte & Wolkenerkennung).
 
 ## Funktionsumfang
 
@@ -22,7 +22,7 @@ verbunden (zentrale Werte & Wolkenerkennung).
 ## Voraussetzungen
 
 * IP-Symcon ab Version 8.1.
-* Eine **Beschattung Steuerung**-Instanz als Parent.
+* Eine **Beschattung Steuerung**-Instanz (im Formular unter „Zentrale Instanz" auswählen).
 * Azimut- und Elevations-Variablen (Symcon-Standortmodul).
 * Aktor-Variable(n) mit Positionswert `0 = offen … 100 = geschlossen`.
 
@@ -30,6 +30,7 @@ verbunden (zentrale Werte & Wolkenerkennung).
 
 | Bereich | Inhalt |
 |---|---|
+| Zentrale Instanz | Auswahl der „Beschattung Steuerung" |
 | Sonnenstand & Sensoren | Azimut, Elevation; optional Helligkeit, Außen-/Innentemperatur |
 | Ausrichtung | Fassadenrichtung, Beschattungswinkel links/rechts |
 | Geometrie | Dachhöhe, Dachvorsprung, Fensterbretthöhe, Endwinkel |

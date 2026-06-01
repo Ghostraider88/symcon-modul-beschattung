@@ -1,17 +1,14 @@
 {
     "id": "{6D18227C-1720-4002-BDB0-071DB6B0C384}",
     "name": "Beschattung Steuerung",
-    "type": 2,
+    "type": 3,
     "vendor": "Beschattung",
     "aliases": [
-        "Beschattung Zentrale",
-        "Shading Control"
+        "Beschattung Zentrale"
     ],
     "url": "https://github.com/Ghostraider88/symcon-modul-beschattung",
     "parentRequirements": [],
     "childRequirements": [],
-    "implemented": [
-        "{BF94CC45-3455-4ADD-8668-E1E6AAC44498}"
-    ],
+    "implemented": [],
     "prefix": "BSTRG"
 }

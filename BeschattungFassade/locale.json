@@ -1,7 +1,8 @@
 {
     "translations": {
         "de": {
-            "This facade instance must be connected to a 'Beschattung Steuerung' parent instance (central values & cloud detection).": "Diese Fassaden-Instanz muss mit einer übergeordneten „Beschattung Steuerung\"-Instanz verbunden sein (zentrale Werte & Wolkenerkennung).",
+            "Select the central 'Beschattung Steuerung' instance below (central values & cloud detection).": "Wähle unten die zentrale „Beschattung Steuerung\"-Instanz aus (zentrale Werte & Wolkenerkennung).",
+            "Central instance (Beschattung Steuerung)": "Zentrale Instanz (Beschattung Steuerung)",
             "Sun position & sensors": "Sonnenstand & Sensoren",
             "Azimuth (location module)": "Azimut (Standortmodul)",
             "Elevation (location module)": "Elevation (Standortmodul)",

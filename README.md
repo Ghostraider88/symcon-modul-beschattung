@@ -22,13 +22,15 @@ Beschattung Steuerung (1×)
   ├── zentrale Werte (editierbare Variablen)
   ├── Wolkenerkennung → Alternativmodus / Sonnenscheinanteil
   └── Beschattung Fassade (n×)   ← jeweils eine Fassade/Fenstergruppe
+         ├── Auswahl der Steuerung (Dropdown im Formular)
          ├── Sonnenstand (Azimut/Elevation aus Standortmodul)
          ├── Helligkeit / Außen- / Innentemperatur (optional)
          └── Aktoren (0 = offen … 100 = geschlossen)
 ```
 
-Jede Fassade ist eine eigene Geräteinstanz mit der Steuerung als Parent. Die zentrale
-Wolkenerkennung und alle zentralen Schwellwerte gelten für alle Fassaden gemeinsam.
+Jede Fassade ist eine eigene Geräteinstanz; im Formular wird die Steuerungs-Instanz
+ausgewählt. Die zentrale Wolkenerkennung und alle zentralen Schwellwerte gelten für alle
+Fassaden gemeinsam.
 
 ## Funktionsmerkmale
 
@@ -48,7 +50,7 @@ https://github.com/Ghostraider88/symcon-modul-beschattung
 ```
 
 Anschließend zuerst eine **Beschattung Steuerung**-Instanz anlegen, dann pro Fassade eine
-**Beschattung Fassade**-Instanz (Parent = Steuerung).
+**Beschattung Fassade**-Instanz und dort oben die Steuerung auswählen.
 
 ## Voraussetzungen
 
