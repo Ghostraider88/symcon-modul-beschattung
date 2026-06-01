@@ -1,0 +1,44 @@
+{
+    "elements": [
+        {
+            "type": "ValidationTextBox",
+            "name": "Hostname",
+            "caption": "Hostname"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "Interval",
+            "caption": "Update Interval (seconds)",
+            "minimum": 0
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Update Now",
+            "onClick": "MYM_Update($id);"
+        },
+        {
+            "type": "Button",
+            "caption": "Hello World",
+            "onClick": "echo MYM_HelloWorld($id);"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Active"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Not configured yet"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "Connection failed"
+        }
+    ]
+}

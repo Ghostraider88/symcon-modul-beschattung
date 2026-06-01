@@ -1,0 +1,14 @@
+{
+    "id": "{00000000-0000-0000-0000-000000000002}",
+    "name": "MyModule",
+    "type": 3,
+    "vendor": "",
+    "aliases": [
+        "My Module"
+    ],
+    "url": "https://github.com/DEIN-USER/DEIN-REPO",
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "MYM"
+}
