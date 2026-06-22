@@ -138,9 +138,9 @@
                             }
                         },
                         {
-                            "caption": "Manual-lock variable (optional)",
+                            "caption": "Block variable (True = keep position, e.g. child's room)",
                             "name": "DisableID",
-                            "width": "260px",
+                            "width": "320px",
                             "add": 0,
                             "edit": {
                                 "type": "SelectVariable"

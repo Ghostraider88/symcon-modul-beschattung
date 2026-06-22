@@ -88,6 +88,8 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeInteger('ManualUntil', 0);
         $this->RegisterAttributeInteger('LastCommandedPos', -1);
         $this->RegisterAttributeString('TempMaxHistory', '{}');
+        $this->RegisterAttributeString('LastModeMap', '{}');  // je Aktor zuletzt befohlener Zustand
+        $this->RegisterAttributeInteger('BlockedLast', -1);   // Dedup für Sperr-Protokoll
 
         // --- Timer ---
         $this->RegisterTimer('EvalTimer', 0, 'BSFAS_Evaluate($_IPS[\'TARGET\']);');
@@ -446,51 +448,82 @@ class BeschattungFassade extends IPSModuleStrict
         return $state;
     }
 
-    /** Fährt die Aktoren entsprechend Entscheidung unter Beachtung der Sperrzeit. */
+    /**
+     * Fährt die Aktoren entsprechend Entscheidung unter Beachtung von Sperrzeit
+     * und Sperrvariablen (Kinderzimmer). Der Zielzustand wird je Aktor verfolgt:
+     * ein durch seine Sperrvariable blockierter Aktor wird übersprungen und NICHT
+     * als erledigt vermerkt, sodass er nach Aufheben der Sperre automatisch nachzieht.
+     */
     private function commandPosition(bool $shade, string $reason, array $central): void
     {
         $this->SetValue('Shaded', $shade);
-        $this->SetValue('TargetPosition', $shade ? $this->ReadPropertyInteger('ShadePosition') : $this->ReadPropertyInteger('OpenPosition'));
+        $facadeTarget = $shade ? $this->ReadPropertyInteger('ShadePosition') : $this->ReadPropertyInteger('OpenPosition');
+        $this->SetValue('TargetPosition', $facadeTarget);
 
         $lockTime = max(0, (int) $central['lockTime']);
         $now = time();
-        $lastTs = $this->ReadAttributeInteger('LastMovementTs');
-        $elapsed = $now - $lastTs;
-        $remaining = max(0, $lockTime - $elapsed);
-        $this->SetValue('LockRemaining', $remaining);
+        $elapsed = $now - $this->ReadAttributeInteger('LastMovementTs');
+        $this->SetValue('LockRemaining', max(0, $lockTime - $elapsed));
 
-        $lastMode = $this->ReadAttributeBoolean('LastMode');
-        $moveNeeded = ($shade !== $lastMode);
-
-        if (!$moveNeeded) {
-            return;
-        }
-        if ($elapsed < $lockTime) {
-            $this->log(sprintf('⏳ Sperrzeit aktiv: %ds übrig (%s)', $remaining, $reason), true);
-            return;
+        $modeMap = json_decode($this->ReadAttributeString('LastModeMap'), true);
+        if (!is_array($modeMap)) {
+            $modeMap = [];
         }
 
+        $moved = 0;
+        $blocked = 0;
+        $locked = 0;
         $firstPos = null;
         foreach ($this->validActuators() as $act) {
-            $target = $shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
-            if ($this->actuatorDisabled($act)) {
-                $this->log(sprintf('🚫 Aktor %d übersprungen (Handbetrieb-Sperre)', $act['ActuatorID']), true);
+            $key = (string) $act['ActuatorID'];
+            $last = array_key_exists($key, $modeMap) ? (bool) $modeMap[$key] : null;
+            if ($last !== null && $last === $shade) {
+                continue; // Aktor bereits in Zielstellung
+            }
+            // Sperrvariable (z. B. Kinderzimmer): Aktor unverändert lassen und NICHT
+            // als erledigt vermerken, damit er nach Aufheben der Sperre nachzieht.
+            if ($this->actuatorBlocked($act)) {
+                $blocked++;
                 continue;
             }
+            // Globale Sperrzeit gegen zu häufiges Fahren.
+            if ($elapsed < $lockTime) {
+                $locked++;
+                continue;
+            }
+            $target = $shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
             $this->moveActuator($act, $target);
+            $modeMap[$key] = $shade;
             if ($firstPos === null) {
                 $firstPos = $target;
             }
+            $moved++;
         }
 
-        $this->WriteAttributeInteger('LastMovementTs', $now);
+        $this->WriteAttributeString('LastModeMap', json_encode($modeMap));
         $this->WriteAttributeBoolean('LastMode', $shade);
-        if ($firstPos !== null) {
-            $this->WriteAttributeInteger('LastCommandedPos', $firstPos);
+
+        $blockSig = $blocked > 0 ? ($shade ? 1 : 0) : -1;
+
+        if ($moved > 0) {
+            $this->WriteAttributeInteger('LastMovementTs', $now);
+            if ($firstPos !== null) {
+                $this->WriteAttributeInteger('LastCommandedPos', $firstPos);
+            }
+            $this->SetValue('LastMovement', $now);
+            $this->SetValue('LockRemaining', $lockTime);
+            $suffix = $blocked > 0 ? sprintf(' · %d gesperrt 🔒', $blocked) : '';
+            $this->log(sprintf('✅ %s → %d%%%s', $reason, $facadeTarget, $suffix));
+        } elseif ($blocked > 0) {
+            // nur bei Zustandswechsel protokollieren (sonst Spam je Auswertung)
+            if ($blockSig !== $this->ReadAttributeInteger('BlockedLast')) {
+                $this->log(sprintf('🔒 %s – %d Aktor(en) durch Sperrvariable blockiert (z. B. Kinderzimmer).', $reason, $blocked));
+            }
+        } elseif ($locked > 0) {
+            $this->log(sprintf('⏳ Sperrzeit aktiv: %ds übrig (%s)', max(0, $lockTime - $elapsed), $reason), true);
         }
-        $this->SetValue('LastMovement', $now);
-        $this->SetValue('LockRemaining', $lockTime);
-        $this->log(sprintf('✅ %s → %d%%', $reason, $shade ? $this->ReadPropertyInteger('ShadePosition') : $this->ReadPropertyInteger('OpenPosition')));
+
+        $this->WriteAttributeInteger('BlockedLast', $blockSig);
     }
 
     private function applyFailSafe(string $why, array $central): void
@@ -578,10 +611,11 @@ class BeschattungFassade extends IPSModuleStrict
         return ($individual >= 0) ? $individual : $this->ReadPropertyInteger('ShadePosition');
     }
 
-    private function actuatorDisabled(array $act): bool
+    /** True = dieser Aktor ist per Sperrvariable blockiert (z. B. Kinderzimmer) und bleibt stehen. */
+    private function actuatorBlocked(array $act): bool
     {
-        $disableID = (int) $act['DisableID'];
-        return $disableID > 0 && $this->variableValid($disableID) && (bool) GetValue($disableID);
+        $blockID = (int) $act['DisableID'];
+        return $blockID > 0 && $this->variableValid($blockID) && (bool) GetValue($blockID);
     }
 
     private function moveActuator(array $act, int $position): void

@@ -22,7 +22,7 @@
             "Actuators": "Aktoren",
             "Actuator variable": "Aktor-Variable",
             "Individual shade position (-1 = facade default)": "Individuelle Beschattungsposition (-1 = Fassaden-Standard)",
-            "Manual-lock variable (optional)": "Handbetrieb-Sperrvariable (optional)",
+            "Block variable (True = keep position, e.g. child's room)": "Sperrvariable (True = Position halten, z. B. Kinderzimmer)",
             "Shade position (0 = open, 100 = closed)": "Beschattungsposition (0 = offen, 100 = geschlossen)",
             "Open position": "Offen-Position",
             "Behaviour & safety": "Verhalten & Sicherheit",

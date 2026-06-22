@@ -15,7 +15,10 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 * **Sperrzeit** gegen häufiges Fahren; **Handbetrieb-Erkennung** mit Pause.
 * **Tagesende**: Behänge öffnen oder Position halten.
 * Mehrere Aktoren je Fassade mit optionaler **individueller Beschattungsposition** und
-  optionaler Handbetrieb-Sperrvariable.
+  optionaler **Sperrvariable je Aktor** („Kinderzimmer"-Funktion): Solange die
+  zugeordnete Variable `True` ist, bleibt **dieser** Rollladen unverändert stehen –
+  die übrigen Aktoren/Fassaden fahren normal weiter. Wird die Variable wieder `False`,
+  zieht der Aktor automatisch in die aktuell gültige Position nach.
 * **Fail-Safe** bei ungültigen/veralteten Sensoren (Position halten / öffnen / beschatten).
 * Reservierte Wind-/Regen-Eingänge (noch ohne aktive Logik).
 
