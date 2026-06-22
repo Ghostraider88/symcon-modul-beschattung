@@ -89,6 +89,7 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeInteger('LastCommandedPos', -1);
         $this->RegisterAttributeString('TempMaxHistory', '{}');
         $this->RegisterAttributeString('LastModeMap', '{}');  // je Aktor zuletzt befohlener Zustand
+        $this->RegisterAttributeString('BlockedMap', '{}');   // je Aktor: war er zuletzt gesperrt?
         $this->RegisterAttributeInteger('BlockedLast', -1);   // Dedup für Sperr-Protokoll
 
         // --- Timer ---
@@ -450,9 +451,16 @@ class BeschattungFassade extends IPSModuleStrict
 
     /**
      * Fährt die Aktoren entsprechend Entscheidung unter Beachtung von Sperrzeit
-     * und Sperrvariablen (Kinderzimmer). Der Zielzustand wird je Aktor verfolgt:
-     * ein durch seine Sperrvariable blockierter Aktor wird übersprungen und NICHT
-     * als erledigt vermerkt, sodass er nach Aufheben der Sperre automatisch nachzieht.
+     * und Sperrvariablen (Kinderzimmer).
+     *
+     * Sperr-Semantik:
+     *  – Sperre aktiv     → Aktor unangetastet; modeMap NICHT aktualisiert.
+     *  – Sperre gerade aufgehoben (wasBlocked=true, jetzt false)
+     *                     → Aktuelle Automation-Entscheidung still in modeMap
+     *                       eintragen, OHNE zu fahren. Der Aktor zieht erst beim
+     *                       nächsten Entscheidungswechsel nach (z. B. morgens,
+     *                       wenn die Automatik beschatten will).
+     *  – Sperre nie aktiv → normaler Fahrbetrieb mit Sperrzeit-Prüfung.
      */
     private function commandPosition(bool $shade, string $reason, array $central): void
     {
@@ -469,6 +477,10 @@ class BeschattungFassade extends IPSModuleStrict
         if (!is_array($modeMap)) {
             $modeMap = [];
         }
+        $blockedMap = json_decode($this->ReadAttributeString('BlockedMap'), true);
+        if (!is_array($blockedMap)) {
+            $blockedMap = [];
+        }
 
         $moved = 0;
         $blocked = 0;
@@ -476,21 +488,35 @@ class BeschattungFassade extends IPSModuleStrict
         $firstPos = null;
         foreach ($this->validActuators() as $act) {
             $key = (string) $act['ActuatorID'];
-            $last = array_key_exists($key, $modeMap) ? (bool) $modeMap[$key] : null;
-            if ($last !== null && $last === $shade) {
-                continue; // Aktor bereits in Zielstellung
-            }
-            // Sperrvariable (z. B. Kinderzimmer): Aktor unverändert lassen und NICHT
-            // als erledigt vermerken, damit er nach Aufheben der Sperre nachzieht.
-            if ($this->actuatorBlocked($act)) {
+            $isBlocked = $this->actuatorBlocked($act);
+            $wasBlocked = (bool) ($blockedMap[$key] ?? false);
+            $blockedMap[$key] = $isBlocked;
+
+            if ($isBlocked) {
+                // Sperre aktiv: Aktor nicht anfassen, Zielstand nicht vermerken.
                 $blocked++;
                 continue;
             }
+
+            if ($wasBlocked) {
+                // Sperre gerade aufgehoben: aktuelle Entscheidung still eintragen,
+                // NICHT fahren. Erst beim nächsten Wechsel der Entscheidung fährt
+                // der Aktor (z. B. nächstes Mal beschatten = true nach bisherigem false).
+                $modeMap[$key] = $shade;
+                continue;
+            }
+
+            $last = array_key_exists($key, $modeMap) ? (bool) $modeMap[$key] : null;
+            if ($last === $shade) {
+                continue; // Aktor bereits in Zielstellung
+            }
+
             // Globale Sperrzeit gegen zu häufiges Fahren.
             if ($elapsed < $lockTime) {
                 $locked++;
                 continue;
             }
+
             $target = $shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
             $this->moveActuator($act, $target);
             $modeMap[$key] = $shade;
@@ -501,6 +527,7 @@ class BeschattungFassade extends IPSModuleStrict
         }
 
         $this->WriteAttributeString('LastModeMap', json_encode($modeMap));
+        $this->WriteAttributeString('BlockedMap', json_encode($blockedMap));
         $this->WriteAttributeBoolean('LastMode', $shade);
 
         $blockSig = $blocked > 0 ? ($shade ? 1 : 0) : -1;
@@ -517,7 +544,7 @@ class BeschattungFassade extends IPSModuleStrict
         } elseif ($blocked > 0) {
             // nur bei Zustandswechsel protokollieren (sonst Spam je Auswertung)
             if ($blockSig !== $this->ReadAttributeInteger('BlockedLast')) {
-                $this->log(sprintf('🔒 %s – %d Aktor(en) durch Sperrvariable blockiert (z. B. Kinderzimmer).', $reason, $blocked));
+                $this->log(sprintf('🔒 %s – %d Aktor(en) gesperrt (Kinderzimmer).', $reason, $blocked));
             }
         } elseif ($locked > 0) {
             $this->log(sprintf('⏳ Sperrzeit aktiv: %ds übrig (%s)', max(0, $lockTime - $elapsed), $reason), true);
