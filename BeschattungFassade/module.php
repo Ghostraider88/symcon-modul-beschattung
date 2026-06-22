@@ -127,7 +127,7 @@ class BeschattungFassade extends IPSModuleStrict
 
         $this->MaintainVariable('ManualMode', $this->Translate('Manual override active'), VARIABLETYPE_BOOLEAN, '~Switch', $pos++, $this->ReadPropertyBoolean('ManualDetection'));
         $this->MaintainVariable('StatusHTML', $this->Translate('Status display'), VARIABLETYPE_STRING, '~HTMLBox', $pos++, $this->ReadPropertyBoolean('EnableHTML'));
-        $this->MaintainVariable('Protocol', $this->Translate('Protocol'), VARIABLETYPE_STRING, '', $pos++, $this->ReadPropertyBoolean('EnableProtocol'));
+        $this->MaintainVariable('Protocol', $this->Translate('Protocol'), VARIABLETYPE_STRING, '~HTMLBox', $pos++, $this->ReadPropertyBoolean('EnableProtocol'));
 
         $this->MaintainSensorReferencesAndMessages();
 
