@@ -81,15 +81,13 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterPropertyInteger('RainID', 0);
 
         // --- interne Persistenz ---
-        $this->RegisterAttributeBoolean('LastMode', false);     // zuletzt befohlener Zustand (true=beschattet)
         $this->RegisterAttributeInteger('LastMovementTs', 0);
         $this->RegisterAttributeBoolean('BrightHyst', false);
         $this->RegisterAttributeBoolean('TempHyst', false);
         $this->RegisterAttributeInteger('ManualUntil', 0);
         $this->RegisterAttributeInteger('LastCommandedPos', -1);
         $this->RegisterAttributeString('TempMaxHistory', '{}');
-        $this->RegisterAttributeString('LastModeMap', '{}');  // je Aktor zuletzt befohlener Zustand
-        $this->RegisterAttributeString('BlockedMap', '{}');   // je Aktor: war er zuletzt gesperrt?
+        $this->RegisterAttributeString('LastModeMap', '{}');  // je Aktor zuletzt befohlener Zustand (fehlt = unbekannt)
         $this->RegisterAttributeInteger('BlockedLast', -1);   // Dedup für Sperr-Protokoll
 
         // --- Timer ---
@@ -453,13 +451,17 @@ class BeschattungFassade extends IPSModuleStrict
      * Fährt die Aktoren entsprechend Entscheidung unter Beachtung von Sperrzeit
      * und Sperrvariablen (Kinderzimmer).
      *
-     * Sperr-Semantik:
-     *  – Sperre aktiv     → Aktor unangetastet; modeMap NICHT aktualisiert.
-     *  – Sperre gerade aufgehoben (wasBlocked=true, jetzt false)
-     *                     → Aktuelle Automation-Entscheidung still in modeMap
-     *                       eintragen, OHNE zu fahren. Der Aktor zieht erst beim
-     *                       nächsten Entscheidungswechsel nach (z. B. morgens,
-     *                       wenn die Automatik beschatten will).
+     * Sperr-Semantik (je Aktor):
+     *  – Sperre aktiv     → Aktor bleibt unangetastet. Sein Zustand ist für das
+     *                       Modul danach UNBEKANNT (modeMap-Eintrag wird entfernt),
+     *                       da er zwischenzeitlich von Hand oder einem Skript bewegt
+     *                       worden sein kann.
+     *  – Sperre aufgehoben→ Beim nächsten gültigen Durchlauf gilt der Zustand als
+     *                       unbekannt, also wird der Aktor auf die aktuell gültige
+     *                       Zielposition gefahren (Sperrzeit beachtet). Nachts ruft
+     *                       Evaluate() commandPosition() gar nicht auf (vor Zeit-
+     *                       fenster), daher öffnet nach Aufheben nachts nichts –
+     *                       erst die nächste echte Entscheidung im Tagfenster fährt.
      *  – Sperre nie aktiv → normaler Fahrbetrieb mit Sperrzeit-Prüfung.
      */
     private function commandPosition(bool $shade, string $reason, array $central): void
@@ -477,10 +479,6 @@ class BeschattungFassade extends IPSModuleStrict
         if (!is_array($modeMap)) {
             $modeMap = [];
         }
-        $blockedMap = json_decode($this->ReadAttributeString('BlockedMap'), true);
-        if (!is_array($blockedMap)) {
-            $blockedMap = [];
-        }
 
         $moved = 0;
         $blocked = 0;
@@ -488,27 +486,18 @@ class BeschattungFassade extends IPSModuleStrict
         $firstPos = null;
         foreach ($this->validActuators() as $act) {
             $key = (string) $act['ActuatorID'];
-            $isBlocked = $this->actuatorBlocked($act);
-            $wasBlocked = (bool) ($blockedMap[$key] ?? false);
-            $blockedMap[$key] = $isBlocked;
 
-            if ($isBlocked) {
-                // Sperre aktiv: Aktor nicht anfassen, Zielstand nicht vermerken.
+            if ($this->actuatorBlocked($act)) {
+                // Sperre aktiv: Aktor nicht anfassen und Zustand als unbekannt
+                // markieren, damit er nach Aufheben der Sperre sicher nachzieht.
                 $blocked++;
-                continue;
-            }
-
-            if ($wasBlocked) {
-                // Sperre gerade aufgehoben: aktuelle Entscheidung still eintragen,
-                // NICHT fahren. Erst beim nächsten Wechsel der Entscheidung fährt
-                // der Aktor (z. B. nächstes Mal beschatten = true nach bisherigem false).
-                $modeMap[$key] = $shade;
+                unset($modeMap[$key]);
                 continue;
             }
 
             $last = array_key_exists($key, $modeMap) ? (bool) $modeMap[$key] : null;
             if ($last === $shade) {
-                continue; // Aktor bereits in Zielstellung
+                continue; // bereits in Zielstellung (durch uns gefahren)
             }
 
             // Globale Sperrzeit gegen zu häufiges Fahren.
@@ -527,8 +516,6 @@ class BeschattungFassade extends IPSModuleStrict
         }
 
         $this->WriteAttributeString('LastModeMap', json_encode($modeMap));
-        $this->WriteAttributeString('BlockedMap', json_encode($blockedMap));
-        $this->WriteAttributeBoolean('LastMode', $shade);
 
         $blockSig = $blocked > 0 ? ($shade ? 1 : 0) : -1;
 
