@@ -46,6 +46,10 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->RegisterPropertyBoolean('UseSunsetAsLatest', false);
         $this->RegisterPropertyInteger('SunsetID', 0); // Variable des Standortmoduls (Timestamp)
 
+        // --- Anzeige ---
+        $this->RegisterPropertyBoolean('EnableHTML', true);
+        $this->RegisterPropertyBoolean('EnableProtocol', true);
+
         // --- interne Persistenz ---
         $this->RegisterAttributeString('CloudHistory', '[]');
 
@@ -117,6 +121,9 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->RegisterVariableBoolean('CloudMode', $this->Translate('Alternative mode active'), '~Switch', $pos++);
         $this->RegisterVariableFloat('SunPercentage', $this->Translate('Sunshine percentage'), 'BSTRG.Percent', $pos++);
         $this->RegisterVariableInteger('BrightnessChanges', $this->Translate('Brightness changes'), '', $pos++);
+
+        $this->MaintainVariable('StatusHTML', $this->Translate('Status display'), VARIABLETYPE_STRING, '~HTMLBox', $pos++, $this->ReadPropertyBoolean('EnableHTML'));
+        $this->MaintainVariable('Protocol', $this->Translate('Protocol'), VARIABLETYPE_STRING, '~HTMLBox', $pos++, $this->ReadPropertyBoolean('EnableProtocol'));
 
         // Referenz auf den (optional gewählten) Sonnenuntergangs-/Helligkeitssensor sauber halten
         $this->MaintainReferences();
@@ -239,15 +246,29 @@ class BeschattungSteuerung extends IPSModuleStrict
         if (!$cloudMode && $changes >= $this->ReadPropertyInteger('CloudChangeLimitOn')) {
             $cloudMode = true;
             $this->LogMessage($this->Translate('Alternative mode activated (fluctuating light).'), KL_MESSAGE);
+            $this->log(sprintf(
+                '⛅ Alternativmodus aktiviert: %d Helligkeitswechsel in den letzten %d Minuten (Schwelle: ≥ %d) – Sonnenanteil aktuell %s %%',
+                $changes,
+                $windowMin,
+                $this->ReadPropertyInteger('CloudChangeLimitOn'),
+                $this->fmtPct($percentage)
+            ));
         } elseif ($cloudMode && $changes < $this->ReadPropertyInteger('CloudChangeLimitOff')) {
             $cloudMode = false;
             $this->LogMessage($this->Translate('Alternative mode ended (light stabilised).'), KL_MESSAGE);
+            $this->log(sprintf(
+                '☀️ Alternativmodus beendet: nur noch %d Helligkeitswechsel in den letzten %d Minuten (Schwelle: < %d) – Licht wieder stabil',
+                $changes,
+                $windowMin,
+                $this->ReadPropertyInteger('CloudChangeLimitOff')
+            ));
         }
 
         $this->WriteAttributeString('CloudHistory', json_encode($history));
         $this->SetValue('CloudMode', $cloudMode);
         $this->SetValue('SunPercentage', $percentage);
         $this->SetValue('BrightnessChanges', $changes);
+        $this->updateHtml($changes, $percentage, $cloudMode, $total, $windowMin);
 
         $this->SendDebug(__FUNCTION__, sprintf(
             'Wechsel=%d, Sonnenanteil=%.1f%%, Alternativmodus=%s',
@@ -368,5 +389,53 @@ class BeschattungSteuerung extends IPSModuleStrict
     private function EchoMessage(string $text): void
     {
         echo $text;
+    }
+
+    // ------------------------------------------------------------------
+    // Anzeige / Protokoll
+    // ------------------------------------------------------------------
+
+    private function log(string $text, bool $debugOnly = false): void
+    {
+        $this->SendDebug('ComputeCloudDetection', $text, 0);
+        if ($debugOnly || !$this->ReadPropertyBoolean('EnableProtocol')) {
+            return;
+        }
+        if (!@IPS_VariableExists(@$this->GetIDForIdent('Protocol'))) {
+            return;
+        }
+        $line = '<b>' . date('d.m.Y H:i:s') . '</b> – ' . $text . '<br>';
+        $lines = explode('<br>', (string) $this->GetValue('Protocol'));
+        array_unshift($lines, $line);
+        $lines = array_slice($lines, 0, 60);
+        $this->SetValue('Protocol', implode('<br>', $lines));
+    }
+
+    private function updateHtml(int $changes, float $percentage, bool $cloudMode, int $total, int $windowMin): void
+    {
+        if (!$this->ReadPropertyBoolean('EnableHTML') || !@IPS_VariableExists(@$this->GetIDForIdent('StatusHTML'))) {
+            return;
+        }
+        $limitOn = $this->ReadPropertyInteger('CloudChangeLimitOn');
+        $limitOff = $this->ReadPropertyInteger('CloudChangeLimitOff');
+        $icon = $cloudMode ? '⛅' : '☀️';
+        $modeText = $cloudMode ? $this->Translate('Alternative mode active') : $this->Translate('Alternative mode inactive');
+        $now = date('H:i');
+        $html = <<<HTML
+<style>.bsbox{font-family:sans-serif;font-size:13px}.bsstatus{font-size:16px;margin-bottom:6px}.bsrow{margin-top:4px}</style>
+<div class="bsbox">
+  <div class="bsstatus">{$icon} {$modeText}</div>
+  <div class="bsrow">☀️ Sonnenscheinanteil: {$this->fmtPct($percentage)} % (Alternativmodus-Beschattung ab &gt; 50 %)</div>
+  <div class="bsrow">🔀 Helligkeitswechsel: {$changes} von {$total} Messwerten · letzte {$windowMin} Min.</div>
+  <div class="bsrow">↳ Ein ab ≥ {$limitOn} Wechseln · Aus unter {$limitOff} Wechseln</div>
+  <div class="bsrow">⏰ Letzte Berechnung: {$now}</div>
+</div>
+HTML;
+        $this->SetValue('StatusHTML', $html);
+    }
+
+    private function fmtPct(float $value): string
+    {
+        return number_format($value, 1, ',', '.');
     }
 }

@@ -83,6 +83,22 @@
                     "minimum": 0
                 }
             ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Display",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "EnableHTML",
+                    "caption": "Create HTML status display variable"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "EnableProtocol",
+                    "caption": "Create protocol variable"
+                }
+            ]
         }
     ],
     "actions": [

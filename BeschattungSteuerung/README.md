@@ -37,6 +37,12 @@ oder den Button „Zentrale Werte auf Standard zurücksetzen".
 `Innentemperatur Min/Max`, `Automatik (global)` *(alle editierbar)* sowie
 `Alternativmodus aktiv`, `Sonnenscheinanteil`, `Helligkeitswechsel` *(nur lesend)*.
 
+Optional (Panel „Anzeige"): `Statusanzeige` (HTML-Box, erklärt auf einen Blick,
+was die aktuellen Werte bedeuten – Sonnenscheinanteil, Helligkeitswechsel im
+Beobachtungsfenster sowie die Ein-/Aus-Schwellwerte des Alternativmodus) und
+`Protokoll` (History-Log, das jede Aktivierung/Deaktivierung des
+Alternativmodus mit Begründung und den zugrunde liegenden Zahlen festhält).
+
 ## PHP-Befehle
 
 ```php
