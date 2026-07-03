@@ -68,6 +68,9 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterPropertyInteger('ManualTolerance', 5);    // %
         $this->RegisterPropertyInteger('ManualPause', 3600);     // s
 
+        // --- Entscheidungs-Bestätigung (Decision-Debounce gegen Wolken-Pingpong) ---
+        $this->RegisterPropertyInteger('DecisionConfirmMinutes', 10); // min, 0 = aus
+
         // --- Fail-Safe / Zuverlässigkeit ---
         $this->RegisterPropertyInteger('FailSafe', self::FAILSAFE_HOLD);
         $this->RegisterPropertyInteger('SensorMaxAge', 3600);    // s, 0 = aus
@@ -89,6 +92,9 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeString('TempMaxHistory', '{}');
         $this->RegisterAttributeString('LastModeMap', '{}');  // je Aktor zuletzt befohlener Zustand (fehlt = unbekannt)
         $this->RegisterAttributeInteger('BlockedLast', -1);   // Dedup für Sperr-Protokoll
+        $this->RegisterAttributeBoolean('LastRawDecision', false); // rohe Entscheidung des Vorzyklus
+        $this->RegisterAttributeInteger('DecisionStableSince', 0); // seit wann unverändert (0 = ungesetzt)
+        $this->RegisterAttributeBoolean('ConfirmedShade', false);  // zuletzt an commandPosition() übergebener Sollzustand
 
         // --- Timer ---
         $this->RegisterTimer('EvalTimer', 0, 'BSFAS_Evaluate($_IPS[\'TARGET\']);');
@@ -273,20 +279,25 @@ class BeschattungFassade extends IPSModuleStrict
         if ($allAround) {
             $shade = true;
             $reason = '🔥 Rundumbeschattung (Außentemp.)';
-        } elseif ($brightnessOK && $temperatureOK) {
-            if ($central['cloudMode']) {
-                // Alternativmodus: Sonnenstand bleibt Bedingung, zusätzlich Sonnenscheinanteil
+        } elseif ($central['cloudMode']) {
+            // Alternativmodus: die instantane, durch Wolken flackernde Helligkeits-
+            // Hysterese ist hier KEIN Gate mehr. Stattdessen ersetzt der über ein
+            // Zeitfenster gemittelte Sonnenscheinanteil den Helligkeits-Aspekt.
+            if ($temperatureOK) {
                 $shade = $sunInWindow && ($central['sunPercentage'] > 50);
                 $reason = sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
             } else {
-                $shade = $sunInWindow;
-                $reason = '☀️ Sonnenstand';
+                $reason = '⚠️ Schwellwerte nicht erfüllt';
             }
+        } elseif ($brightnessOK && $temperatureOK) {
+            $shade = $sunInWindow;
+            $reason = '☀️ Sonnenstand';
         } else {
             $reason = '⚠️ Schwellwerte nicht erfüllt';
         }
 
         $this->setConditions($sunInWindow, $brightnessOK, $temperatureOK);
+        $shade = $this->debounceDecision($shade);
         $this->commandPosition($shade, $reason, $central);
         $this->updateHtml($central, $shade, $reason, $azimut, $elevation);
         $this->SetStatus(102);
@@ -448,6 +459,52 @@ class BeschattungFassade extends IPSModuleStrict
     }
 
     /**
+     * Verzögert einen WECHSEL der Entscheidung (beschatten ↔ öffnen), bis die rohe
+     * Entscheidung mindestens `DecisionConfirmMinutes` Minuten laufend unverändert
+     * war. Kurze Ausreißer (z. B. einzelne durchziehende Wolken) werden so
+     * ignoriert. Bei DecisionConfirmMinutes <= 0 wird der Rohwert direkt
+     * durchgereicht (altes Verhalten); die Stabilitäts-Attribute werden trotzdem
+     * gepflegt, damit sie beim Aktivieren sofort korrekt sind.
+     */
+    private function debounceDecision(bool $rawShade): bool
+    {
+        $now = time();
+        $lastRaw = $this->ReadAttributeBoolean('LastRawDecision');
+        $stableSince = $this->ReadAttributeInteger('DecisionStableSince');
+
+        if ($rawShade !== $lastRaw || $stableSince === 0) {
+            $stableSince = $now;
+            $this->WriteAttributeBoolean('LastRawDecision', $rawShade);
+            $this->WriteAttributeInteger('DecisionStableSince', $stableSince);
+        }
+
+        $confirmMinutes = $this->ReadPropertyInteger('DecisionConfirmMinutes');
+        if ($confirmMinutes <= 0) {
+            return $rawShade;
+        }
+
+        $confirmed = $this->ReadAttributeBoolean('ConfirmedShade');
+        if ($rawShade === $confirmed) {
+            return $rawShade;
+        }
+
+        $stableFor = $now - $stableSince;
+        $needed = $confirmMinutes * 60;
+        if ($stableFor < $needed) {
+            $this->log(sprintf(
+                '🕒 Entscheidungswechsel in Bestätigung: %s → %s (%ds/%ds stabil)',
+                $confirmed ? 'beschattet' : 'offen',
+                $rawShade ? 'beschattet' : 'offen',
+                $stableFor,
+                $needed
+            ), true);
+            return $confirmed;
+        }
+
+        return $rawShade;
+    }
+
+    /**
      * Fährt die Aktoren entsprechend Entscheidung unter Beachtung von Sperrzeit
      * und Sperrvariablen (Kinderzimmer).
      *
@@ -466,6 +523,8 @@ class BeschattungFassade extends IPSModuleStrict
      */
     private function commandPosition(bool $shade, string $reason, array $central): void
     {
+        $this->WriteAttributeBoolean('ConfirmedShade', $shade);
+
         $this->SetValue('Shaded', $shade);
         $facadeTarget = $shade ? $this->ReadPropertyInteger('ShadePosition') : $this->ReadPropertyInteger('OpenPosition');
         $this->SetValue('TargetPosition', $facadeTarget);

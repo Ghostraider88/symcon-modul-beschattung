@@ -245,6 +245,13 @@
                     "minimum": 0
                 },
                 {
+                    "type": "NumberSpinner",
+                    "name": "DecisionConfirmMinutes",
+                    "caption": "Decision confirmation time before switching (minutes, 0 = off)",
+                    "suffix": "min",
+                    "minimum": 0
+                },
+                {
                     "type": "CheckBox",
                     "name": "EnableHTML",
                     "caption": "Create HTML status display variable"

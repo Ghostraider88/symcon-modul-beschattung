@@ -11,8 +11,19 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 * Helligkeits- und Temperaturbedingungen mit **Hysterese**.
 * **Rundumbeschattung** ab hoher Außentemperatur (Sonnenstand wird dann ignoriert).
 * **Innentemperatur-Logik** (min/max) nach MyHomeControl-Vorbild.
-* **Alternativmodus** bei Wolken (Sonnenscheinanteil > 50 %, Sonnenstand bleibt Bedingung).
+* **Alternativmodus** bei Wolken: der über ein Zeitfenster gemittelte
+  Sonnenscheinanteil (> 50 %) ersetzt bei aktivem Alternativmodus vollständig die
+  (durch Wolken kurzfristig flackernde) Momentan-Helligkeit als Bedingung;
+  Sonnenstand bleibt weiterhin Voraussetzung.
 * **Sperrzeit** gegen häufiges Fahren; **Handbetrieb-Erkennung** mit Pause.
+* **Entscheidungs-Bestätigungszeit** (`DecisionConfirmMinutes`, Default 10 min): Ein
+  Wechsel der Entscheidung (beschatten ↔ öffnen) wird erst tatsächlich gefahren,
+  wenn die zugrunde liegende Rohentscheidung mindestens so lange laufend
+  unverändert war. Kurze Ausreißer (z. B. einzelne durchziehende Wolken) werden so
+  ignoriert – das bekannte Pingpong im Sperrzeit-Takt bei wechselhafter Bewölkung
+  entfällt. Gilt einheitlich für alle Entscheidungspfade inkl. Rundumbeschattung;
+  die Sonderfälle „Automatik aus", Handbetrieb, Tagesende und Fail-Safe greifen
+  weiterhin sofort. 0 = deaktiviert (altes Verhalten).
 * **Tagesende**: Behänge öffnen oder Position halten.
 * Mehrere Aktoren je Fassade mit optionaler **individueller Beschattungsposition** und
   optionaler **Sperrvariable je Aktor** („Kinderzimmer"-Funktion): Solange die
@@ -38,7 +49,7 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 | Ausrichtung | Fassadenrichtung, Beschattungswinkel links/rechts |
 | Geometrie | Dachhöhe, Dachvorsprung, Fensterbretthöhe, Endwinkel |
 | Aktoren & Positionen | Aktorliste, Beschattungs-/Offen-Position (Default 70 % / 0 %) |
-| Verhalten & Sicherheit | Tagesende, Fail-Safe, Intervall, Sensoralter, mittlere Außentemp., Handbetrieb, Anzeige |
+| Verhalten & Sicherheit | Tagesende, Fail-Safe, Intervall, Sensoralter, mittlere Außentemp., Handbetrieb, Entscheidungs-Bestätigungszeit, Anzeige |
 
 ## Statusvariablen
 

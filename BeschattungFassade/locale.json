@@ -38,6 +38,7 @@
             "Detect manual operation and pause automation": "Handbetrieb erkennen und Automatik pausieren",
             "Manual detection tolerance": "Toleranz Handbetrieb-Erkennung",
             "Pause after manual operation (seconds)": "Pause nach Handbetrieb (Sekunden)",
+            "Decision confirmation time before switching (minutes, 0 = off)": "Entscheidungs-Bestätigungszeit vor Wechsel (Minuten, 0 = aus)",
             "Create HTML status display variable": "HTML-Statusanzeige-Variable anlegen",
             "Create protocol variable": "Protokoll-Variable anlegen",
             "Reserved (wind / rain – not yet active)": "Reserviert (Wind / Regen – noch nicht aktiv)",
