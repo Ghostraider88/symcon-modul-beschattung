@@ -515,9 +515,13 @@ class BeschattungFassade extends IPSModuleStrict
      *                       worden sein kann.
      *  – Sperre aufgehoben→ Beim nächsten gültigen Durchlauf gilt der Zustand als
      *                       unbekannt, also wird der Aktor auf die aktuell gültige
-     *                       Zielposition gefahren (Sperrzeit beachtet). Nachts ruft
-     *                       Evaluate() commandPosition() gar nicht auf (vor Zeit-
-     *                       fenster), daher öffnet nach Aufheben nachts nichts –
+     *                       Zielposition gefahren. Dieser einmalige Nachzieh-
+     *                       Fahrbefehl ist von der globalen Sperrzeit AUSGENOMMEN
+     *                       (der Aktor hat ja seit der Sperre gar nicht bewegt) –
+     *                       sonst könnte ihn eine gerade laufende Sperrzeit einer
+     *                       anderen Aktor-Bewegung unnötig lange ausbremsen. Nachts
+     *                       ruft Evaluate() commandPosition() gar nicht auf (vor
+     *                       Zeitfenster), daher öffnet nach Aufheben nachts nichts –
      *                       erst die nächste echte Entscheidung im Tagfenster fährt.
      *  – Sperre nie aktiv → normaler Fahrbetrieb mit Sperrzeit-Prüfung.
      */
@@ -559,8 +563,12 @@ class BeschattungFassade extends IPSModuleStrict
                 continue; // bereits in Zielstellung (durch uns gefahren)
             }
 
-            // Globale Sperrzeit gegen zu häufiges Fahren.
-            if ($elapsed < $lockTime) {
+            // Globale Sperrzeit gegen zu häufiges Fahren – gilt NICHT für den
+            // einmaligen Nachzieh-Fahrbefehl direkt nach Aufheben einer Sperre
+            // ($last === null, Zustand war unbekannt): der Aktor hat währenddessen
+            // gar nicht bewegt, muss also nicht künstlich ausgebremst werden.
+            $isCatchUp = ($last === null);
+            if (!$isCatchUp && $elapsed < $lockTime) {
                 $locked++;
                 continue;
             }
@@ -836,6 +844,17 @@ HTML;
             if ($this->variableValid($id)) {
                 $this->RegisterReference($id);
                 $this->RegisterMessage($id, VM_UPDATE);
+            }
+        }
+
+        // Sperrvariablen der Aktoren (z. B. Kinderzimmer/Ausschlafen) ebenfalls
+        // beobachten, damit ein Aufheben der Sperre sofort neu bewertet wird,
+        // statt erst beim nächsten Timer-Tick.
+        foreach ($this->validActuators() as $act) {
+            $blockID = (int) $act['DisableID'];
+            if ($this->variableValid($blockID)) {
+                $this->RegisterReference($blockID);
+                $this->RegisterMessage($blockID, VM_UPDATE);
             }
         }
 
