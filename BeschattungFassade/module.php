@@ -99,6 +99,7 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeInteger('DecisionStableSince', 0); // seit wann unverändert (0 = ungesetzt)
         $this->RegisterAttributeBoolean('ConfirmedShade', false);  // zuletzt an commandPosition() übergebener Sollzustand
         $this->RegisterAttributeString('LastReason', '');          // Entscheidungsgrund für die TileVisu-Kachel
+        $this->RegisterAttributeString('LastDecisionPath', 'special'); // welcher Zweig entschieden hat (für die Kachel)
 
         // --- Timer ---
         $this->RegisterTimer('EvalTimer', 0, 'BSFAS_Evaluate($_IPS[\'TARGET\']);');
@@ -259,6 +260,7 @@ class BeschattungFassade extends IPSModuleStrict
         if ($central === null) {
             $this->SetStatus(104);
             $this->setReason('⚠️ Keine Steuerung verbunden');
+            $this->setDecisionPath('special');
             $this->log('⚠️ Keine Steuerungs-Instanz verbunden – keine Bewegung.', true);
             return;
         }
@@ -268,6 +270,7 @@ class BeschattungFassade extends IPSModuleStrict
             $this->setConditions(false, false, false);
             $this->SetValue('Shaded', false);
             $this->setReason('🚫 Automatik aus');
+            $this->setDecisionPath('special');
             $this->log('🚫 Automatik deaktiviert.');
             $this->updateHtml($central, false, 'Automatik aus');
             $this->SetStatus(104);
@@ -277,6 +280,7 @@ class BeschattungFassade extends IPSModuleStrict
         // --- Handbetrieb-Erkennung ---
         if ($this->handleManualOverride()) {
             $this->setReason('✋ Handbetrieb aktiv');
+            $this->setDecisionPath('special');
             $this->SetStatus(102);
             return;
         }
@@ -287,6 +291,7 @@ class BeschattungFassade extends IPSModuleStrict
             $this->setConditions(false, false, false);
             $this->SetValue('Shaded', false);
             $this->setReason('⏰ Vor Zeitfenster');
+            $this->setDecisionPath('special');
             $this->log('⏰ Außerhalb Zeitfenster (zu früh) – Position bleibt.', true);
             $this->updateHtml($central, false, 'vor Zeitfenster');
             $this->SetStatus(102);
@@ -301,6 +306,7 @@ class BeschattungFassade extends IPSModuleStrict
                 $this->log('⏰ Tagesende – Position halten.', true);
             }
             $this->setConditions(false, false, false);
+            $this->setDecisionPath('special');
             $this->updateHtml($central, false, 'nach Zeitfenster');
             $this->SetStatus(102);
             return;
@@ -344,13 +350,16 @@ class BeschattungFassade extends IPSModuleStrict
         // --- Entscheidung (MHC-konform) ---
         $shade = false;
         $reason = '';
+        $decisionPath = 'normal';
         if ($allAround) {
             $shade = true;
             $reason = '🔥 Rundumbeschattung (Außentemp.)';
+            $decisionPath = 'allAround';
         } elseif ($central['cloudMode']) {
             // Alternativmodus: die instantane, durch Wolken flackernde Helligkeits-
             // Hysterese ist hier KEIN Gate mehr. Stattdessen ersetzt der über ein
             // Zeitfenster gemittelte Sonnenscheinanteil den Helligkeits-Aspekt.
+            $decisionPath = 'cloudMode';
             if ($temperatureOK) {
                 $shade = $sunInWindow && ($central['sunPercentage'] > 50);
                 $reason = sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
@@ -366,6 +375,7 @@ class BeschattungFassade extends IPSModuleStrict
 
         $this->setConditions($sunInWindow, $brightnessOK, $temperatureOK);
         $this->setReason($reason);
+        $this->setDecisionPath($decisionPath);
         $shade = $this->debounceDecision($shade);
         $this->commandPosition($shade, $reason, $central);
         $this->updateHtml($central, $shade, $reason, $azimut, $elevation);
@@ -667,6 +677,7 @@ class BeschattungFassade extends IPSModuleStrict
         $mode = $this->ReadPropertyInteger('FailSafe');
         $this->setConditions(false, false, false);
         $this->setReason('🛟 Fail-Safe: ' . $why);
+        $this->setDecisionPath('special');
         switch ($mode) {
             case self::FAILSAFE_OPEN:
                 $this->log(sprintf('🛟 Fail-Safe (%s) → öffnen', $why));
@@ -868,6 +879,7 @@ class BeschattungFassade extends IPSModuleStrict
             'confirmed'         => $this->ReadAttributeBoolean('ConfirmedShade'),
             'confirmMinutes'    => $this->ReadPropertyInteger('DecisionConfirmMinutes'),
             'stableSince'       => $this->ReadAttributeInteger('DecisionStableSince'),
+            'decisionPath'      => $this->ReadAttributeString('LastDecisionPath'),
         ];
     }
 
@@ -922,6 +934,18 @@ class BeschattungFassade extends IPSModuleStrict
     private function setReason(string $reason): void
     {
         $this->WriteAttributeString('LastReason', $reason);
+    }
+
+    /**
+     * Merkt sich, welcher Entscheidungszweig zuletzt gegriffen hat, damit die
+     * Kachel Bedingungszeilen ausgrauen kann, die gerade nicht ausschlaggebend
+     * sind (z. B. Helligkeit/Sonne bei Rundumbeschattung).
+     *
+     * @param 'allAround'|'cloudMode'|'normal'|'special' $path
+     */
+    private function setDecisionPath(string $path): void
+    {
+        $this->WriteAttributeString('LastDecisionPath', $path);
     }
 
     private function log(string $text, bool $debugOnly = false): void

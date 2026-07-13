@@ -142,6 +142,8 @@
   .bs-chip.ok { color: var(--bs-ok); background: var(--bs-ok-soft); }
   .bs-chip.bad { color: var(--bs-bad); background: var(--bs-bad-soft); }
   .bs-chip.wait { color: var(--bs-wait); background: var(--bs-wait-soft); }
+  .bs-chip.bs-chip-muted { color: var(--bs-faint); background: var(--bs-track); font-weight: 600; }
+  .bs-row.bs-row-overridden { opacity: 0.5; }
 
   .bs-track { position: relative; height: 5px; border-radius: 3px; background: var(--bs-track); margin-top: 6px; }
   .bs-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; background: var(--bs-accent); opacity: 0.85; }
@@ -196,6 +198,7 @@
     if (hi <= lo) { return 0; }
     return clamp(((v - lo) / (hi - lo)) * 100, 0, 100);
   }
+  function norm360(deg) { return ((deg % 360) + 360) % 360; }
   function timeOfDay(sec) {
     if (sec === null || sec === undefined) { return '–'; }
     var h = Math.floor(sec / 3600);
@@ -236,6 +239,7 @@
         return 'Ein >' + num(d.brightnessOn, 0) + ' · Aus <' + num(d.brightnessOff, 0);
       },
       ok: function (d) { return d.brightnessOK; },
+      overridden: function (d) { return d.decisionPath === 'allAround' || d.decisionPath === 'cloudMode'; },
       bar: function (d) {
         if (d.brightness === null || d.brightnessOn === null) { return null; }
         var hi = Math.max(d.brightness, d.brightnessOn, d.brightnessOff) * 1.3 || 1;
@@ -289,8 +293,9 @@
       key: 'sun', label: function () { return L('sunOnWindow', 'Sonne auf Fenster'); }, icon: '🧭',
       show: function () { return true; },
       ist: function (d) { return (d.azimuth === null ? '–' : num(d.azimuth, 0) + '°') + ' / ' + (d.elevation === null ? '–' : num(d.elevation, 0) + '°'); },
-      soll: function (d) { return num(d.facadeDirection - d.shadeAngleLeft, 0) + '–' + num(d.facadeDirection + d.shadeAngleRight, 0) + '° · >' + num(d.criticalElevation, 0) + '°'; },
+      soll: function (d) { return num(norm360(d.facadeDirection - d.shadeAngleLeft), 0) + '–' + num(norm360(d.facadeDirection + d.shadeAngleRight), 0) + '° · >' + num(d.criticalElevation, 0) + '°'; },
       ok: function (d) { return d.sunInWindow; },
+      overridden: function (d) { return d.decisionPath === 'allAround'; },
       bar: function () { return null; },
     },
     {
@@ -324,6 +329,10 @@
     return ok ? '<span class="bs-chip ok">✓</span>' : '<span class="bs-chip bad">✗</span>';
   }
 
+  function overriddenChip() {
+    return '<span class="bs-chip bs-chip-muted" title="' + L('overriddenTitle', 'aktuell nicht entscheidend') + '">–</span>';
+  }
+
   function barHtml(bar) {
     if (!bar) { return ''; }
     var html = '<div class="bs-track">';
@@ -346,12 +355,13 @@
     ROWS.forEach(function (row) {
       if (!row.show(d)) { return; }
       var soll = row.soll(d);
-      out += '<div class="bs-row">' +
+      var isOverridden = row.overridden ? row.overridden(d) : false;
+      out += '<div class="bs-row' + (isOverridden ? ' bs-row-overridden' : '') + '">' +
         '<div class="bs-row-top">' +
         '<span class="bs-row-label">' + row.icon + ' ' + row.label(d) + '</span>' +
         '<span class="bs-row-ist">' + row.ist(d) + '</span>' +
         (soll ? '<span class="bs-row-soll">' + soll + '</span>' : '') +
-        chip(row.ok(d), row.waitChip ? row.waitChip(d) : false) +
+        (isOverridden ? overriddenChip() : chip(row.ok(d), row.waitChip ? row.waitChip(d) : false)) +
         '</div>' +
         barHtml(row.bar(d)) +
         '</div>';

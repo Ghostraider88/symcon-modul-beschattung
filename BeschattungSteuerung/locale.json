@@ -4,6 +4,7 @@
             "Central values (time window, thresholds, lock time, global automation) are maintained as status variables and can be changed at runtime via the visualisation. Other systems can read and write them there.": "Die zentralen Werte (Zeitfenster, Schwellwerte, Sperrzeit, globale Automatik) werden als Statusvariablen geführt und können zur Laufzeit über die Visualisierung geändert werden. Andere Systeme können dort lesend und schreibend zugreifen.",
             "Cloud detection": "Wolkenerkennung",
             "Central brightness sensor (lux)": "Zentraler Helligkeitssensor (Lux)",
+            "Sensor unit (display only, e.g. lx or W/m²)": "Sensor-Einheit (nur Anzeige, z. B. lx oder W/m²)",
             "Sunny threshold (lux)": "Sonnig-Schwelle (Lux)",
             "Change tolerance (lux)": "Wechseltoleranz (Lux)",
             "Observation window (minutes)": "Beobachtungszeitraum (Minuten)",

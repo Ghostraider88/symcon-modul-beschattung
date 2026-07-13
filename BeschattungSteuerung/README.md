@@ -26,7 +26,7 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
 
 | Bereich | Beschreibung |
 |---|---|
-| Wolkenerkennung | Helligkeitssensor, Sonnig-Schwelle, Wechseltoleranz, Beobachtungszeitraum, Ein-/Aus-Grenzen, Intervall |
+| Wolkenerkennung | Helligkeitssensor, Sensor-Einheit (nur Anzeige, z. B. „lx" oder „W/m²"), Sonnig-Schwelle, Wechseltoleranz, Beobachtungszeitraum, Ein-/Aus-Grenzen, Intervall |
 | Tagesende / Sonnenuntergang | Sonnenuntergang als Tagesende aktivieren + Sonnenuntergangs-Variable |
 | Zuverlässigkeit | Maximales Sensoralter (Staleness-Erkennung) |
 

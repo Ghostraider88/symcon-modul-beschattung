@@ -44,6 +44,7 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->RegisterPropertyInteger('CloudChangeLimitOff', 4);
         $this->RegisterPropertyInteger('CloudInterval', 60); // Sekunden
         $this->RegisterPropertyInteger('SensorMaxAge', 3600); // s, Staleness-Grenze
+        $this->RegisterPropertyString('SensorUnitLabel', 'lx'); // rein kosmetisch, z.B. "lx" oder "W/m²"
 
         // --- Tagesende über Sonnenuntergang (optional) ---
         $this->RegisterPropertyBoolean('UseSunsetAsLatest', false);
@@ -491,6 +492,7 @@ HTML;
             'windowMinutes'    => $this->ReadPropertyInteger('CloudWindowMinutes'),
             'sensorValue'      => $sensorValue,
             'sunnyThreshold'   => $this->ReadPropertyInteger('CloudSunnyThreshold'),
+            'sensorUnit'       => $this->ReadPropertyString('SensorUnitLabel'),
             'earliestSec'      => $this->secondsOfDay($this->GetValue('Earliest')),
             'latestSec'        => $this->effectiveLatestSec(),
             'lockTime'         => (int) $this->GetValue('LockTime'),

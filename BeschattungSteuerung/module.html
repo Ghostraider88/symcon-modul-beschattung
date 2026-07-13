@@ -187,8 +187,9 @@
 
   function renderKv(d) {
     var rows = [];
-    rows.push(kvRow('☀️ ' + L('sensor', 'Sensor'), d.sensorValue === null ? '–' : num(d.sensorValue, 0)));
-    rows.push(kvRow(L('sunnyThreshold', 'Sonnig-Schwelle'), num(d.sunnyThreshold, 0)));
+    var unit = d.sensorUnit ? (' ' + d.sensorUnit) : '';
+    rows.push(kvRow('☀️ ' + L('sensor', 'Sensor'), d.sensorValue === null ? '–' : num(d.sensorValue, 0) + unit));
+    rows.push(kvRow(L('sunnyThreshold', 'Sonnig-Schwelle'), num(d.sunnyThreshold, 0) + unit));
     rows.push(kvRow('⏰ ' + L('timeWindow', 'Zeitfenster'), timeOfDay(d.earliestSec) + '–' + timeOfDay(d.latestSec)));
     rows.push(kvRow('🔒 ' + L('lockTime', 'Sperrzeit'), duration(d.lockTime)));
     rows.push(kvRow('🌡️ ' + L('outdoorThresholds', 'Außenschwellen'), num(d.tempOn, 1) + '/' + num(d.tempOff, 1) + ' °C'));
