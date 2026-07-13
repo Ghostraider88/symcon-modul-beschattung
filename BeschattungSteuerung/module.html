@@ -44,14 +44,15 @@
 
 <style>
   .bs-tile {
-    --bs-content: var(--content-color, #1d2126);
-    --bs-accent: var(--accent-color, #17bfa4);
-    --bs-text: #e8ecef;
-    --bs-sub: #9aa4ad;
-    --bs-faint: #6f7982;
-    --bs-line: rgba(232, 236, 239, 0.12);
-    --bs-track: rgba(232, 236, 239, 0.10);
-    --bs-sun: #f0be47;
+    --bs-content: #ffffff;
+    --bs-accent: var(--accent-color, #0f9c85);
+    --bs-text: #23282d;
+    --bs-sub: #5b6570;
+    --bs-faint: #8a929a;
+    --bs-line: rgba(35, 40, 45, 0.12);
+    --bs-track: rgba(35, 40, 45, 0.10);
+    --bs-sun: #b9820f;
+    --bs-sun-soft: rgba(185, 130, 15, 0.14);
 
     box-sizing: border-box;
     background: var(--bs-content);
@@ -98,7 +99,7 @@
   .bs-tick-on { background: var(--bs-text); }
   .bs-ticklbl { position: absolute; top: 8px; font-size: 0.66em; color: var(--bs-faint); transform: translateX(-50%); white-space: nowrap; }
   .bs-modechip { display: inline-block; margin-top: 20px; font-size: 0.78em; font-weight: 600; border-radius: 999px; padding: 2px 9px; background: var(--bs-track); color: var(--bs-sub); }
-  .bs-modechip.bs-active { background: rgba(240, 190, 71, 0.18); color: var(--bs-sun); }
+  .bs-modechip.bs-active { background: var(--bs-sun-soft); color: var(--bs-sun); }
 
   .bs-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--bs-line); font-size: 0.78em; }
   .bs-kv div { display: flex; justify-content: space-between; gap: 6px; }
@@ -106,6 +107,20 @@
   .bs-kv b { font-weight: 600; white-space: nowrap; }
 
   .bs-tile.bs-compact .bs-kv { display: none; }
+
+  @media (prefers-color-scheme: dark) {
+    .bs-tile {
+      --bs-content: #1d2126;
+      --bs-accent: var(--accent-color, #17bfa4);
+      --bs-text: #e8ecef;
+      --bs-sub: #9aa4ad;
+      --bs-faint: #6f7982;
+      --bs-line: rgba(232, 236, 239, 0.12);
+      --bs-track: rgba(232, 236, 239, 0.10);
+      --bs-sun: #f0be47;
+      --bs-sun-soft: rgba(240, 190, 71, 0.16);
+    }
+  }
 </style>
 
 <script>
