@@ -13,9 +13,11 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
 * **Tagesende per Sonnenuntergang** (optional) statt fester „spätestens"-Zeit.
 * Stellt allen Fassaden die zentralen Daten gebündelt bereit (`BSTRG_GetCentralData`).
 * **TileVisu-Kachel**: Sonnenscheinanteil als Ring-Gauge (50 %-Marke = Alternativmodus-
-  Schwelle), Helligkeitswechsel als Balken mit Ein-/Aus-Schwellenmarken, Alternativmodus-
-  Status sowie alle zentralen Werte kompakt darunter. Einziges Bedienelement ist der
-  globale Automatik-Schalter; editiert wird weiterhin über die vorhandenen Variablen.
+  Schwelle), Helligkeitswechsel als Balken mit Ein-/Aus-Schwellenmarken, darunter eine
+  Verlaufskurve (Sparkline) der Helligkeit/Strahlung der letzten Stunde mit
+  eingezeichneter Sonnig-Schwelle, Alternativmodus-Status sowie alle zentralen Werte
+  kompakt darunter. Einziges Bedienelement ist der globale Automatik-Schalter; editiert
+  wird weiterhin über die vorhandenen Variablen.
 
 ## Voraussetzungen
 
@@ -41,7 +43,8 @@ oder den Button „Zentrale Werte auf Standard zurücksetzen".
 `Innentemperatur Min/Max`, `Automatik (global)` *(alle editierbar)* sowie
 `Alternativmodus aktiv`, `Sonnenscheinanteil`, `Helligkeitswechsel` *(nur lesend)*.
 
-Optional (Panel „Anzeige"): `Statusanzeige` (HTML-Box, erklärt auf einen Blick,
+Optional (Panel „Anzeige", standardmäßig aus – die TileVisu-Kachel deckt das
+inzwischen ab): `Statusanzeige` (HTML-Box, erklärt auf einen Blick,
 was die aktuellen Werte bedeuten – Sonnenscheinanteil, Helligkeitswechsel im
 Beobachtungsfenster sowie die Ein-/Aus-Schwellwerte des Alternativmodus) und
 `Protokoll` (History-Log, das jede Aktivierung/Deaktivierung des

@@ -35,6 +35,15 @@
     </div>
   </div>
 
+  <div class="bs-spark" id="bsSpark">
+    <svg viewBox="0 0 300 44" preserveAspectRatio="none" aria-hidden="true">
+      <line id="bsSparkThreshold" class="bs-spark-threshold" x1="0" x2="300" y1="0" y2="0"/>
+      <polygon id="bsSparkArea" class="bs-spark-area"/>
+      <polyline id="bsSparkLine" class="bs-spark-line"/>
+    </svg>
+    <div class="bs-spark-caption" id="bsSparkCaption"></div>
+  </div>
+
   <div class="bs-kv" id="bsKv"></div>
 </div>
 
@@ -95,12 +104,19 @@
   .bs-modechip { display: inline-block; margin-top: 20px; font-size: 0.78em; font-weight: 600; border-radius: 999px; padding: 2px 9px; background: var(--bs-track); color: var(--bs-sub); }
   .bs-modechip.bs-active { background: var(--bs-sun-soft); color: var(--bs-sun); }
 
-  .bs-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--bs-line); font-size: 0.78em; }
+  .bs-spark { margin-top: 12px; }
+  .bs-spark svg { width: 100%; height: 40px; display: block; }
+  .bs-spark-line { fill: none; stroke: var(--bs-sun); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .bs-spark-area { fill: var(--bs-sun-soft); stroke: none; }
+  .bs-spark-threshold { stroke: var(--bs-faint); stroke-width: 1; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+  .bs-spark-caption { font-size: 0.66em; color: var(--bs-faint); margin-top: 2px; }
+
+  .bs-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--bs-line); font-size: 0.78em; }
   .bs-kv div { display: flex; justify-content: space-between; gap: 6px; }
   .bs-kv span { color: var(--bs-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bs-kv b { font-weight: 600; white-space: nowrap; }
 
-  .bs-tile.bs-compact .bs-kv { display: none; }
+  .bs-tile.bs-compact .bs-kv, .bs-tile.bs-compact .bs-spark { display: none; }
 
   @media (prefers-color-scheme: dark) {
     .bs-tile {
@@ -175,6 +191,48 @@
     chip.textContent = (d.cloudMode ? '⛅ ' : '☀️ ') + (d.cloudMode ? L('alternativeModeOn', 'Alternativmodus AN') : L('alternativeModeOff', 'Alternativmodus AUS'));
   }
 
+  function renderSpark(d) {
+    var el = root.querySelector('#bsSpark');
+    var history = Array.isArray(d.history) ? d.history : [];
+    if (history.length < 2) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+
+    var W = 300, H = 44, PAD = 3;
+    var values = history.map(function (e) { return e.v; });
+    var lo = Math.min.apply(null, values);
+    var hi = Math.max.apply(null, values);
+    if (d.sunnyThreshold !== null && d.sunnyThreshold !== undefined) {
+      lo = Math.min(lo, d.sunnyThreshold);
+      hi = Math.max(hi, d.sunnyThreshold);
+    }
+    if (hi <= lo) { hi = lo + 1; }
+    var tMin = history[0].t, tMax = history[history.length - 1].t;
+    if (tMax <= tMin) { tMax = tMin + 1; }
+
+    function x(t) { return ((t - tMin) / (tMax - tMin)) * W; }
+    function y(v) { return H - PAD - ((v - lo) / (hi - lo)) * (H - 2 * PAD); }
+
+    var points = history.map(function (e) { return x(e.t).toFixed(1) + ',' + y(e.v).toFixed(1); }).join(' ');
+    root.querySelector('#bsSparkLine').setAttribute('points', points);
+    root.querySelector('#bsSparkArea').setAttribute('points', points + ' ' + W.toFixed(1) + ',' + H + ' 0,' + H);
+
+    var thresholdEl = root.querySelector('#bsSparkThreshold');
+    if (d.sunnyThreshold !== null && d.sunnyThreshold !== undefined) {
+      var ty = y(d.sunnyThreshold).toFixed(1);
+      thresholdEl.setAttribute('y1', ty);
+      thresholdEl.setAttribute('y2', ty);
+      thresholdEl.style.display = '';
+    } else {
+      thresholdEl.style.display = 'none';
+    }
+
+    var unit = d.sensorUnit ? (' ' + d.sensorUnit) : '';
+    root.querySelector('#bsSparkCaption').textContent = num(lo, 0) + unit + ' – ' + num(hi, 0) + unit + ' · letzte ' + d.windowMinutes + ' min';
+  }
+
   function kvRow(label, value) {
     return '<div><span>' + label + '</span><b>' + value + '</b></div>';
   }
@@ -198,6 +256,7 @@
     root.querySelector('#bsAutomation').checked = !!d.automationGlobal;
     renderGauge(d);
     renderChanges(d);
+    renderSpark(d);
     renderKv(d);
   }
 

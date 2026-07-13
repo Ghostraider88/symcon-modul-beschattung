@@ -33,12 +33,20 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 * **Fail-Safe** bei ungültigen/veralteten Sensoren (Position halten / öffnen / beschatten).
 * Reservierte Wind-/Regen-Eingänge (noch ohne aktive Logik).
 * **TileVisu-Kachel**: Die Instanz erscheint als grafische Kachel in der TileVisu –
-  Zustand, Zielposition und Entscheidungsgrund, ein Draufsicht-Kompass (Sonnenstand
-  relativ zum Beschattungsfenster) und ein Hausquerschnitt (Sonnenelevation gegen
-  Dachvorsprung/kritischen Winkel), darunter Ist-/Soll-Zeilen für Helligkeit,
-  Außen-/Innentemperatur, Zeitfenster und Sperrzeit mit ✓/✗. Einziges Bedienelement
-  ist der Automatik-Schalter. Alle bisherigen Statusvariablen bleiben unverändert
-  bestehen.
+  Zustand, Zielposition und Entscheidungsgrund, Ist-Position je Aktor (inkl. 🔒 bei
+  gesperrten), ein Draufsicht-Kompass (Sonnenstand relativ zum Beschattungsfenster,
+  inkl. bisheriger Sonnenbahn der letzten 3 Std. und kurzer Prognose der nächsten
+  Stunde) und ein Hausquerschnitt (Sonnenelevation gegen Dachvorsprung/kritischen
+  Winkel), darunter Ist-/Soll-Zeilen für Helligkeit, Außen-/Innentemperatur,
+  Zeitfenster und Sperrzeit mit ✓/✗ – Zeilen, die gerade nicht ausschlaggebend sind
+  (z. B. Helligkeit bei Rundumbeschattung), werden ausgegraut. Fußzeile zeigt u. a.
+  Fahrten und kumulierte Beschattungsdauer des heutigen Tages. Im ausgeklappten
+  Vollbild zusätzlich die letzten Protokoll-Einträge. Einziges Bedienelement ist der
+  Automatik-Schalter. Alle bisherigen Statusvariablen bleiben unverändert bestehen.
+* **Sensor-Sättigungswarnung**: Bleibt der Helligkeitssensor trotz hohem Sonnenstand
+  länger als 30 Minuten exakt unverändert (typisch bei einem Sensor am Ende seines
+  Messbereichs), zeigt die Kachel ein ⚠️ an der Helligkeitszeile – rein diagnostisch,
+  beeinflusst keine Entscheidung.
 
 ## Voraussetzungen
 
@@ -62,7 +70,9 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 
 `Automatik` *(schaltbar)*, `Beschattet`, `Zielposition`, `Sonne auf Fenster`,
 `Helligkeit ausreichend`, `Temperaturbedingung erfüllt`, `Sperrzeit übrig`,
-`Letzte Bewegung`, optional `Handbetrieb aktiv`, `Statusanzeige` (HTML), `Protokoll`.
+`Letzte Bewegung`, optional `Handbetrieb aktiv`, `Protokoll`. Die alte HTML-
+`Statusanzeige` ist standardmäßig aus (die TileVisu-Kachel deckt das inzwischen ab),
+lässt sich bei Bedarf im Panel „Verhalten & Sicherheit" wieder aktivieren.
 
 ## Statuscodes
 

@@ -51,7 +51,7 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->RegisterPropertyInteger('SunsetID', 0); // Variable des Standortmoduls (Timestamp)
 
         // --- Anzeige ---
-        $this->RegisterPropertyBoolean('EnableHTML', true);
+        $this->RegisterPropertyBoolean('EnableHTML', false); // TileVisu-Kachel deckt das jetzt ab
         $this->RegisterPropertyBoolean('EnableProtocol', true);
 
         // --- interne Persistenz ---
@@ -481,6 +481,11 @@ HTML;
         $sensorID = $this->ReadPropertyInteger('CloudBrightnessID');
         $sensorValue = $this->variableValid($sensorID) ? (float) GetValue($sensorID) : null;
 
+        $history = json_decode($this->ReadAttributeString('CloudHistory'), true);
+        if (!is_array($history)) {
+            $history = [];
+        }
+
         return [
             'name'             => IPS_GetName($this->InstanceID),
             'automationGlobal' => (bool) $this->GetValue('AutomationGlobal'),
@@ -493,6 +498,7 @@ HTML;
             'sensorValue'      => $sensorValue,
             'sunnyThreshold'   => $this->ReadPropertyInteger('CloudSunnyThreshold'),
             'sensorUnit'       => $this->ReadPropertyString('SensorUnitLabel'),
+            'history'          => $history,
             'earliestSec'      => $this->secondsOfDay($this->GetValue('Earliest')),
             'latestSec'        => $this->effectiveLatestSec(),
             'lockTime'         => (int) $this->GetValue('LockTime'),

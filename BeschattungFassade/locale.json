@@ -74,7 +74,10 @@
             "Alternative mode": "Alternativmodus",
             "Sun percentage": "Sonnenanteil",
             "Confirming change": "Wechsel in Bestätigung",
-            "{n} locked": "{n} gesperrt"
+            "{n} locked": "{n} gesperrt",
+            "Sensor possibly saturated (unchanged for a long time despite high sun elevation)": "Sensor evtl. gesättigt (lange unverändert trotz hohem Sonnenstand)",
+            "moves today": "Fahrten heute",
+            "shaded today": "beschattet heute"
         }
     }
 }
