@@ -32,6 +32,9 @@ class BeschattungSteuerung extends IPSModuleStrict
     {
         parent::Create();
 
+        // --- TileVisu-Kachel ---
+        $this->SetVisualizationType(1);
+
         // --- Wolkenerkennung (Setup-Konfiguration) ---
         $this->RegisterPropertyInteger('CloudBrightnessID', 0); // zentraler Helligkeitssensor (Lux)
         $this->RegisterPropertyInteger('CloudSunnyThreshold', 20000);
@@ -169,6 +172,7 @@ class BeschattungSteuerung extends IPSModuleStrict
             default:
                 throw new Exception('Invalid Ident: ' . $ident);
         }
+        $this->pushTile();
     }
 
     /**
@@ -269,6 +273,7 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->SetValue('SunPercentage', $percentage);
         $this->SetValue('BrightnessChanges', $changes);
         $this->updateHtml($changes, $percentage, $cloudMode, $total, $windowMin);
+        $this->pushTile();
 
         $this->SendDebug(__FUNCTION__, sprintf(
             'Wechsel=%d, Sonnenanteil=%.1f%%, Alternativmodus=%s',
@@ -292,6 +297,36 @@ class BeschattungSteuerung extends IPSModuleStrict
         $this->SetValue('IndoorTempMin', self::DEFAULT_INDOOR_MIN);
         $this->SetValue('IndoorTempMax', self::DEFAULT_INDOOR_MAX);
         $this->EchoMessage($this->Translate('Central values reset to defaults.'));
+        $this->pushTile();
+    }
+
+    // ------------------------------------------------------------------
+    // TileVisu-Kachel
+    // ------------------------------------------------------------------
+
+    /** Baut die HTML-Kachel (statisches Markup + Startdaten) für die TileVisu. */
+    public function GetVisualizationTile(): string
+    {
+        $html = (string) file_get_contents(__DIR__ . '/module.html');
+        $config = [
+            'labels' => [
+                'automation'           => $this->Translate('Automation (global)'),
+                'sunPercentage'        => $this->Translate('Sunshine percentage'),
+                'alternativeModeOn'    => $this->Translate('Alternative mode active'),
+                'alternativeModeOff'   => $this->Translate('Alternative mode inactive'),
+                'changes'              => $this->Translate('Brightness changes'),
+                'sensor'               => $this->Translate('Sensor'),
+                'sunnyThreshold'       => $this->Translate('Sunny threshold'),
+                'timeWindow'           => $this->Translate('Time window'),
+                'lockTime'             => $this->Translate('Lock time'),
+                'outdoorThresholds'    => $this->Translate('Outdoor thresholds'),
+                'allAroundFrom'        => $this->Translate('All-around from'),
+                'indoorRange'          => $this->Translate('Indoor range'),
+                'brightnessThresholds' => $this->Translate('Brightness thresholds'),
+            ],
+        ];
+        $data = json_encode($this->getTileData());
+        return $html . '<script>var _config = ' . json_encode($config) . '; if (window.handleMessage) { handleMessage(' . $data . '); }</script>';
     }
 
     // ------------------------------------------------------------------
@@ -437,5 +472,44 @@ HTML;
     private function fmtPct(float $value): string
     {
         return number_format($value, 1, ',', '.');
+    }
+
+    /** Sammelt alle für die Kachel relevanten Werte als JSON-fähiges Array. */
+    private function getTileData(): array
+    {
+        $sensorID = $this->ReadPropertyInteger('CloudBrightnessID');
+        $sensorValue = $this->variableValid($sensorID) ? (float) GetValue($sensorID) : null;
+
+        return [
+            'name'             => IPS_GetName($this->InstanceID),
+            'automationGlobal' => (bool) $this->GetValue('AutomationGlobal'),
+            'cloudMode'        => (bool) $this->GetValue('CloudMode'),
+            'sunPercentage'    => (float) $this->GetValue('SunPercentage'),
+            'changes'          => (int) $this->GetValue('BrightnessChanges'),
+            'limitOn'          => $this->ReadPropertyInteger('CloudChangeLimitOn'),
+            'limitOff'         => $this->ReadPropertyInteger('CloudChangeLimitOff'),
+            'windowMinutes'    => $this->ReadPropertyInteger('CloudWindowMinutes'),
+            'sensorValue'      => $sensorValue,
+            'sunnyThreshold'   => $this->ReadPropertyInteger('CloudSunnyThreshold'),
+            'earliestSec'      => $this->secondsOfDay($this->GetValue('Earliest')),
+            'latestSec'        => $this->effectiveLatestSec(),
+            'lockTime'         => (int) $this->GetValue('LockTime'),
+            'brightnessOn'     => (int) $this->GetValue('BrightnessOn'),
+            'brightnessOff'    => (int) $this->GetValue('BrightnessOff'),
+            'tempOn'           => (float) $this->GetValue('TempOn'),
+            'tempOff'          => (float) $this->GetValue('TempOff'),
+            'tempAllAround'    => (float) $this->GetValue('TempAllAround'),
+            'indoorMin'        => (float) $this->GetValue('IndoorTempMin'),
+            'indoorMax'        => (float) $this->GetValue('IndoorTempMax'),
+        ];
+    }
+
+    /** Pusht die aktuellen Kachel-Daten an eine ggf. geöffnete TileVisu. */
+    private function pushTile(): void
+    {
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+        $this->UpdateVisualizationValue(json_encode($this->getTileData()));
     }
 }

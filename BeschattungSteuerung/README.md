@@ -12,6 +12,10 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
   Lichtverhältnisse (Alternativmodus) und ermittelt den Sonnenscheinanteil.
 * **Tagesende per Sonnenuntergang** (optional) statt fester „spätestens"-Zeit.
 * Stellt allen Fassaden die zentralen Daten gebündelt bereit (`BSTRG_GetCentralData`).
+* **TileVisu-Kachel**: Sonnenscheinanteil als Ring-Gauge (50 %-Marke = Alternativmodus-
+  Schwelle), Helligkeitswechsel als Balken mit Ein-/Aus-Schwellenmarken, Alternativmodus-
+  Status sowie alle zentralen Werte kompakt darunter. Einziges Bedienelement ist der
+  globale Automatik-Schalter; editiert wird weiterhin über die vorhandenen Variablen.
 
 ## Voraussetzungen
 

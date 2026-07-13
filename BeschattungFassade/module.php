@@ -30,6 +30,9 @@ class BeschattungFassade extends IPSModuleStrict
     {
         parent::Create();
 
+        // --- TileVisu-Kachel ---
+        $this->SetVisualizationType(1);
+
         // --- Zentrale Steuerungs-Instanz ---
         $this->RegisterPropertyInteger('CentralID', 0);
 
@@ -95,6 +98,7 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeBoolean('LastRawDecision', false); // rohe Entscheidung des Vorzyklus
         $this->RegisterAttributeInteger('DecisionStableSince', 0); // seit wann unverändert (0 = ungesetzt)
         $this->RegisterAttributeBoolean('ConfirmedShade', false);  // zuletzt an commandPosition() übergebener Sollzustand
+        $this->RegisterAttributeString('LastReason', '');          // Entscheidungsgrund für die TileVisu-Kachel
 
         // --- Timer ---
         $this->RegisterTimer('EvalTimer', 0, 'BSFAS_Evaluate($_IPS[\'TARGET\']);');
@@ -188,6 +192,65 @@ class BeschattungFassade extends IPSModuleStrict
     /** Hauptauswertung. Wird vom Timer, bei Sensoränderung und manuell aufgerufen. */
     public function Evaluate(): void
     {
+        $this->evaluateInternal();
+        $this->pushTile();
+    }
+
+    /** Sperrzeit zurücksetzen (Button / externer Aufruf). */
+    public function ResetLock(): void
+    {
+        $this->WriteAttributeInteger('LastMovementTs', 0);
+        $this->SetValue('LockRemaining', 0);
+        $this->log('Sperrzeit manuell zurückgesetzt.');
+        $this->pushTile();
+    }
+
+    /** Testfahrt aus dem Aktionsbereich (umgeht Sperrzeit/Bedingungen). */
+    public function TestMove(bool $Shade): void
+    {
+        foreach ($this->validActuators() as $act) {
+            $pos = $Shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
+            $this->moveActuator($act, $pos);
+        }
+        $this->log(sprintf('🔧 Testfahrt → %s', $Shade ? 'beschatten' : 'öffnen'));
+        $this->pushTile();
+    }
+
+    // ------------------------------------------------------------------
+    // TileVisu-Kachel
+    // ------------------------------------------------------------------
+
+    /** Baut die HTML-Kachel (statisches Markup + Startdaten) für die TileVisu. */
+    public function GetVisualizationTile(): string
+    {
+        $html = (string) file_get_contents(__DIR__ . '/module.html');
+        $config = [
+            'labels' => [
+                'shaded'          => $this->Translate('Shaded'),
+                'open'            => $this->Translate('Open'),
+                'automation'      => $this->Translate('Automation'),
+                'target'          => $this->Translate('Target'),
+                'brightness'      => $this->Translate('Brightness'),
+                'outdoorTemp'     => $this->Translate('Outdoor temp.'),
+                'indoorTemp'      => $this->Translate('Indoor temp.'),
+                'sunOnWindow'     => $this->Translate('Sun on window'),
+                'timeWindow'      => $this->Translate('Time window'),
+                'lockTime'        => $this->Translate('Lock time'),
+                'waitingChip'     => $this->Translate('waiting'),
+                'lastMovement'    => $this->Translate('Last movement'),
+                'alternativeMode' => $this->Translate('Alternative mode'),
+                'sunPercentage'   => $this->Translate('Sun percentage'),
+                'manualActive'    => $this->Translate('Manual override active'),
+                'confirming'      => $this->Translate('Confirming change'),
+                'blockedSuffix'   => $this->Translate('{n} locked'),
+            ],
+        ];
+        $data = json_encode($this->getTileData());
+        return $html . '<script>var _config = ' . json_encode($config) . '; if (window.handleMessage) { handleMessage(' . $data . '); }</script>';
+    }
+
+    private function evaluateInternal(): void
+    {
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;
         }
@@ -195,6 +258,7 @@ class BeschattungFassade extends IPSModuleStrict
         $central = $this->getCentralData();
         if ($central === null) {
             $this->SetStatus(104);
+            $this->setReason('⚠️ Keine Steuerung verbunden');
             $this->log('⚠️ Keine Steuerungs-Instanz verbunden – keine Bewegung.', true);
             return;
         }
@@ -203,6 +267,7 @@ class BeschattungFassade extends IPSModuleStrict
         if (!$central['automationGlobal'] || !$this->GetValue('Automation')) {
             $this->setConditions(false, false, false);
             $this->SetValue('Shaded', false);
+            $this->setReason('🚫 Automatik aus');
             $this->log('🚫 Automatik deaktiviert.');
             $this->updateHtml($central, false, 'Automatik aus');
             $this->SetStatus(104);
@@ -211,6 +276,7 @@ class BeschattungFassade extends IPSModuleStrict
 
         // --- Handbetrieb-Erkennung ---
         if ($this->handleManualOverride()) {
+            $this->setReason('✋ Handbetrieb aktiv');
             $this->SetStatus(102);
             return;
         }
@@ -220,6 +286,7 @@ class BeschattungFassade extends IPSModuleStrict
         if ($nowSec < $central['earliestSec']) {
             $this->setConditions(false, false, false);
             $this->SetValue('Shaded', false);
+            $this->setReason('⏰ Vor Zeitfenster');
             $this->log('⏰ Außerhalb Zeitfenster (zu früh) – Position bleibt.', true);
             $this->updateHtml($central, false, 'vor Zeitfenster');
             $this->SetStatus(102);
@@ -230,6 +297,7 @@ class BeschattungFassade extends IPSModuleStrict
                 $this->commandPosition(false, '⏰ Tagesende → öffnen', $central);
             } else {
                 $this->SetValue('Shaded', false);
+                $this->setReason('⏰ Tagesende – Position gehalten');
                 $this->log('⏰ Tagesende – Position halten.', true);
             }
             $this->setConditions(false, false, false);
@@ -297,28 +365,11 @@ class BeschattungFassade extends IPSModuleStrict
         }
 
         $this->setConditions($sunInWindow, $brightnessOK, $temperatureOK);
+        $this->setReason($reason);
         $shade = $this->debounceDecision($shade);
         $this->commandPosition($shade, $reason, $central);
         $this->updateHtml($central, $shade, $reason, $azimut, $elevation);
         $this->SetStatus(102);
-    }
-
-    /** Sperrzeit zurücksetzen (Button / externer Aufruf). */
-    public function ResetLock(): void
-    {
-        $this->WriteAttributeInteger('LastMovementTs', 0);
-        $this->SetValue('LockRemaining', 0);
-        $this->log('Sperrzeit manuell zurückgesetzt.');
-    }
-
-    /** Testfahrt aus dem Aktionsbereich (umgeht Sperrzeit/Bedingungen). */
-    public function TestMove(bool $Shade): void
-    {
-        foreach ($this->validActuators() as $act) {
-            $pos = $Shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
-            $this->moveActuator($act, $pos);
-        }
-        $this->log(sprintf('🔧 Testfahrt → %s', $Shade ? 'beschatten' : 'öffnen'));
     }
 
     // ------------------------------------------------------------------
@@ -337,16 +388,20 @@ class BeschattungFassade extends IPSModuleStrict
             ? ($azimut >= $azFrom || $azimut <= $azTo)
             : ($azimut >= $azFrom && $azimut <= $azTo);
 
+        $endAngle = (float) $this->ReadPropertyInteger('EndAngle');
+        $elevOK = ($elevation > $this->criticalElevation()) && ($elevation > $endAngle);
+
+        return $azimutOK && $elevOK;
+    }
+
+    /** Winkel, ab dem der Dachvorsprung die Sonne nicht mehr auf das Fenster lässt. */
+    private function criticalElevation(): float
+    {
         $height = $this->ReadPropertyFloat('RoofHeight');
         $overhang = $this->ReadPropertyFloat('RoofOverhang');
         $sill = $this->ReadPropertyFloat('WindowSill');
-        $endAngle = (float) $this->ReadPropertyInteger('EndAngle');
-
         $denominator = $height - $sill;
-        $critical = ($denominator > 0.0) ? rad2deg(atan($overhang / $denominator)) : 0.0;
-        $elevOK = ($elevation > $critical) && ($elevation > $endAngle);
-
-        return $azimutOK && $elevOK;
+        return ($denominator > 0.0) ? rad2deg(atan($overhang / $denominator)) : 0.0;
     }
 
     /** @return bool|null true/false = Bedingung; null = Sensor vorhanden aber veraltet (Fail-Safe). */
@@ -611,6 +666,7 @@ class BeschattungFassade extends IPSModuleStrict
     {
         $mode = $this->ReadPropertyInteger('FailSafe');
         $this->setConditions(false, false, false);
+        $this->setReason('🛟 Fail-Safe: ' . $why);
         switch ($mode) {
             case self::FAILSAFE_OPEN:
                 $this->log(sprintf('🛟 Fail-Safe (%s) → öffnen', $why));
@@ -699,6 +755,17 @@ class BeschattungFassade extends IPSModuleStrict
         return $blockID > 0 && $this->variableValid($blockID) && (bool) GetValue($blockID);
     }
 
+    private function blockedActuatorCount(): int
+    {
+        $count = 0;
+        foreach ($this->validActuators() as $act) {
+            if ($this->actuatorBlocked($act)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     private function moveActuator(array $act, int $position): void
     {
         $id = (int) $act['ActuatorID'];
@@ -740,6 +807,79 @@ class BeschattungFassade extends IPSModuleStrict
         return is_array($data) ? $data : null;
     }
 
+    /** Sammelt alle für die Kachel relevanten Ist-/Soll-Werte als JSON-fähiges Array. */
+    private function getTileData(): array
+    {
+        $central = $this->getCentralData();
+
+        $azID = $this->ReadPropertyInteger('AzimuthID');
+        $elID = $this->ReadPropertyInteger('ElevationID');
+        $azimuth = $this->variableValid($azID) ? (float) GetValue($azID) : null;
+        $elevation = $this->variableValid($elID) ? (float) GetValue($elID) : null;
+
+        $brightID = $this->ReadPropertyInteger('BrightnessID');
+        $brightness = $this->variableValid($brightID) ? (float) GetValue($brightID) : null;
+
+        $outID = $this->ReadPropertyInteger('OutdoorTempID');
+        $outdoorTemp = $this->variableValid($outID) ? (float) GetValue($outID) : null;
+
+        $inID = $this->ReadPropertyInteger('IndoorTempID');
+        $indoorTemp = $this->variableValid($inID) ? (float) GetValue($inID) : null;
+
+        $lockTime = $central !== null ? max(0, (int) $central['lockTime']) : 0;
+        $elapsed = time() - $this->ReadAttributeInteger('LastMovementTs');
+        $lockRemaining = max(0, $lockTime - $elapsed);
+
+        return [
+            'name'              => IPS_GetName($this->InstanceID),
+            'shaded'            => (bool) $this->GetValue('Shaded'),
+            'targetPosition'    => (int) $this->GetValue('TargetPosition'),
+            'reason'            => $this->ReadAttributeString('LastReason'),
+            'automation'        => (bool) $this->GetValue('Automation'),
+            'brightness'        => $brightness,
+            'brightnessOn'      => $central['brightnessOn'] ?? null,
+            'brightnessOff'     => $central['brightnessOff'] ?? null,
+            'brightnessOK'      => (bool) $this->GetValue('BrightnessOK'),
+            'outdoorTemp'       => $outdoorTemp,
+            'tempOn'            => $central['tempOn'] ?? null,
+            'tempOff'           => $central['tempOff'] ?? null,
+            'temperatureOK'     => (bool) $this->GetValue('TemperatureOK'),
+            'indoorTemp'        => $indoorTemp,
+            'indoorMin'         => $central['indoorMin'] ?? null,
+            'indoorMax'         => $central['indoorMax'] ?? null,
+            'azimuth'           => $azimuth,
+            'elevation'         => $elevation,
+            'facadeDirection'   => $this->ReadPropertyInteger('FacadeDirection'),
+            'shadeAngleLeft'    => $this->ReadPropertyInteger('ShadeAngleLeft'),
+            'shadeAngleRight'   => $this->ReadPropertyInteger('ShadeAngleRight'),
+            'criticalElevation' => $this->criticalElevation(),
+            'sunInWindow'       => (bool) $this->GetValue('SunInWindow'),
+            'earliestSec'       => $central['earliestSec'] ?? null,
+            'latestSec'         => $central['latestSec'] ?? null,
+            'nowSec'            => ((int) date('H') * 3600) + ((int) date('i') * 60),
+            'lockTime'          => $lockTime,
+            'lockRemaining'     => $lockRemaining,
+            'lastMovement'      => (int) $this->GetValue('LastMovement'),
+            'central'           => $central !== null,
+            'cloudMode'         => (bool) ($central['cloudMode'] ?? false),
+            'sunPercentage'     => (float) ($central['sunPercentage'] ?? 0.0),
+            'manualMode'        => $this->ReadPropertyBoolean('ManualDetection') && (bool) $this->GetValue('ManualMode'),
+            'blockedCount'      => $this->blockedActuatorCount(),
+            'confirmed'         => $this->ReadAttributeBoolean('ConfirmedShade'),
+            'confirmMinutes'    => $this->ReadPropertyInteger('DecisionConfirmMinutes'),
+            'stableSince'       => $this->ReadAttributeInteger('DecisionStableSince'),
+        ];
+    }
+
+    /** Pusht die aktuellen Kachel-Daten an eine ggf. geöffnete TileVisu. */
+    private function pushTile(): void
+    {
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+        $this->UpdateVisualizationValue(json_encode($this->getTileData()));
+    }
+
     // ------------------------------------------------------------------
     // Sensor-Validierung
     // ------------------------------------------------------------------
@@ -776,6 +916,12 @@ class BeschattungFassade extends IPSModuleStrict
         $this->SetValue('SunInWindow', $sun);
         $this->SetValue('BrightnessOK', $brightness);
         $this->SetValue('TemperatureOK', $temperature);
+    }
+
+    /** Merkt sich den zuletzt gültigen Entscheidungsgrund für die TileVisu-Kachel. */
+    private function setReason(string $reason): void
+    {
+        $this->WriteAttributeString('LastReason', $reason);
     }
 
     private function log(string $text, bool $debugOnly = false): void

@@ -32,6 +32,13 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   zieht der Aktor automatisch in die aktuell gültige Position nach.
 * **Fail-Safe** bei ungültigen/veralteten Sensoren (Position halten / öffnen / beschatten).
 * Reservierte Wind-/Regen-Eingänge (noch ohne aktive Logik).
+* **TileVisu-Kachel**: Die Instanz erscheint als grafische Kachel in der TileVisu –
+  Zustand, Zielposition und Entscheidungsgrund, ein Draufsicht-Kompass (Sonnenstand
+  relativ zum Beschattungsfenster) und ein Hausquerschnitt (Sonnenelevation gegen
+  Dachvorsprung/kritischen Winkel), darunter Ist-/Soll-Zeilen für Helligkeit,
+  Außen-/Innentemperatur, Zeitfenster und Sperrzeit mit ✓/✗. Einziges Bedienelement
+  ist der Automatik-Schalter. Alle bisherigen Statusvariablen bleiben unverändert
+  bestehen.
 
 ## Voraussetzungen
 

@@ -41,7 +41,14 @@
             "Status display": "Statusanzeige",
             "Protocol": "Protokoll",
             "Active": "Aktiv",
-            "Inactive": "Inaktiv"
+            "Inactive": "Inaktiv",
+            "Sensor": "Sensor",
+            "Sunny threshold": "Sonnig-Schwelle",
+            "Time window": "Zeitfenster",
+            "Outdoor thresholds": "Außenschwellen",
+            "All-around from": "Rundum ab",
+            "Indoor range": "Innenbereich",
+            "Brightness thresholds": "Helligkeitsschwellen"
         }
     }
 }

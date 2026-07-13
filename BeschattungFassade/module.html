@@ -1,0 +1,493 @@
+<div class="bs-tile" id="bsTile">
+  <div class="bs-head">
+    <div class="bs-head-left">
+      <div class="bs-name" id="bsName"></div>
+      <div class="bs-state">
+        <span class="bs-state-icon" id="bsStateIcon"></span>
+        <span class="bs-state-text" id="bsStateText"></span>
+        <span class="bs-state-target" id="bsStateTarget"></span>
+      </div>
+      <div class="bs-reason" id="bsReason"></div>
+    </div>
+    <div class="bs-head-right">
+      <div class="bs-toggle-label" id="bsAutomationLabel"></div>
+      <label class="bs-toggle">
+        <input type="checkbox" id="bsAutomation">
+        <span class="bs-knob"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="bs-gfx">
+    <figure class="bs-fig">
+      <svg viewBox="0 0 128 128" class="bs-compass" aria-hidden="true">
+        <circle cx="64" cy="64" r="50" class="bs-ring"/>
+        <path id="bsSector" class="bs-sector" d=""/>
+        <rect x="49" y="49" width="30" height="30" rx="2" class="bs-house"/>
+        <rect id="bsWinMark" class="bs-winmark" x="0" y="0" width="3" height="18" rx="1"/>
+        <line id="bsSunRay" class="bs-ray"/>
+        <circle id="bsSunDot" class="bs-sundot" r="6"/>
+        <text x="64" y="9" class="bs-compasslbl">N</text>
+        <text x="123" y="67" class="bs-compasslbl">O</text>
+        <text x="64" y="126" class="bs-compasslbl">S</text>
+        <text x="5" y="67" class="bs-compasslbl">W</text>
+        <text id="bsAzLabel" class="bs-azlabel"></text>
+      </svg>
+      <figcaption id="bsCompassCaption"></figcaption>
+    </figure>
+    <figure class="bs-fig">
+      <svg viewBox="0 0 150 128" class="bs-cross" aria-hidden="true">
+        <line x1="6" y1="112" x2="144" y2="112" class="bs-ground"/>
+        <line x1="98" y1="34" x2="98" y2="112" class="bs-wall"/>
+        <path d="M88,36 L144,20" class="bs-roof"/>
+        <rect x="95.5" y="58" width="5" height="34" rx="1" class="bs-window"/>
+        <line x1="90" y1="92" x2="101" y2="92" class="bs-sill"/>
+        <line id="bsCritLine" class="bs-critline"/>
+        <text id="bsCritLabel" class="bs-critlabel"></text>
+        <line id="bsElevRay" class="bs-ray"/>
+        <circle id="bsElevDot" class="bs-sundot" r="6"/>
+        <text id="bsElevLabel" class="bs-elevlabel"></text>
+      </svg>
+      <figcaption id="bsCrossCaption"></figcaption>
+    </figure>
+  </div>
+
+  <div class="bs-rows" id="bsRows"></div>
+  <div class="bs-foot" id="bsFoot"></div>
+</div>
+
+<style>
+  .bs-tile {
+    --bs-content: var(--content-color, #1d2126);
+    --bs-accent: var(--accent-color, #17bfa4);
+    --bs-text: #e8ecef;
+    --bs-sub: #9aa4ad;
+    --bs-faint: #6f7982;
+    --bs-line: rgba(232, 236, 239, 0.12);
+    --bs-track: rgba(232, 236, 239, 0.10);
+    --bs-band: rgba(232, 236, 239, 0.10);
+    --bs-sun: #f0be47;
+    --bs-sun-soft: rgba(240, 190, 71, 0.16);
+    --bs-ok: #3fbf74;
+    --bs-ok-soft: rgba(63, 191, 116, 0.16);
+    --bs-bad: #e05b52;
+    --bs-bad-soft: rgba(224, 91, 82, 0.16);
+    --bs-wait: #d9a13b;
+    --bs-wait-soft: rgba(217, 161, 59, 0.16);
+
+    box-sizing: border-box;
+    background: var(--bs-content);
+    color: var(--bs-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 14px 16px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+  }
+  .bs-tile *, .bs-tile *::before, .bs-tile *::after { box-sizing: border-box; }
+
+  .bs-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .bs-name { font-size: 0.82em; color: var(--bs-sub); margin-bottom: 2px; }
+  .bs-state { display: flex; align-items: baseline; gap: 6px; font-size: 1.28em; font-weight: 700; letter-spacing: 0.01em; }
+  .bs-state-target { color: var(--bs-sub); font-weight: 500; font-size: 0.75em; }
+  .bs-state.is-shaded .bs-state-text, .bs-state.is-shaded .bs-state-icon { color: var(--bs-accent); }
+  .bs-reason { font-size: 0.86em; color: var(--bs-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .bs-head-right { text-align: right; flex: 0 0 auto; }
+  .bs-toggle-label { font-size: 0.72em; color: var(--bs-faint); margin-bottom: 3px; }
+  .bs-toggle { position: relative; display: inline-block; width: 38px; height: 22px; }
+  .bs-toggle input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; z-index: 2; cursor: pointer; }
+  .bs-knob { position: absolute; inset: 0; border-radius: 999px; background: var(--bs-track); border: 1px solid var(--bs-line); transition: background 0.15s; }
+  .bs-knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--bs-content); box-shadow: 0 1px 2px rgba(0,0,0,0.4); transition: transform 0.15s; }
+  .bs-toggle input:checked + .bs-knob { background: var(--bs-accent); border-color: var(--bs-accent); }
+  .bs-toggle input:checked + .bs-knob::after { transform: translateX(16px); }
+  .bs-toggle input:focus-visible + .bs-knob { outline: 2px solid var(--bs-accent); outline-offset: 2px; }
+
+  .bs-gfx { display: flex; gap: 12px; margin: 12px 0 4px; }
+  .bs-fig { flex: 1 1 0; min-width: 0; margin: 0; text-align: center; }
+  .bs-fig svg { width: 100%; height: auto; display: block; }
+  .bs-fig figcaption { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-faint); margin-top: 3px; }
+  .bs-ring { fill: none; stroke: var(--bs-line); stroke-width: 1.5; }
+  .bs-sector { fill: var(--bs-sun-soft); stroke: var(--bs-sun); stroke-width: 1; stroke-opacity: 0.55; }
+  .bs-house { fill: none; stroke: var(--bs-sub); stroke-width: 1.5; }
+  .bs-winmark { fill: var(--bs-accent); }
+  .bs-ray { stroke: var(--bs-sun); stroke-width: 2; stroke-linecap: round; }
+  .bs-ray.bs-off { stroke: var(--bs-faint); }
+  .bs-sundot { fill: var(--bs-sun); }
+  .bs-sundot.bs-off { fill: var(--bs-faint); }
+  .bs-compasslbl { font-size: 9px; fill: var(--bs-faint); text-anchor: middle; }
+  .bs-azlabel { font-size: 8.5px; fill: var(--bs-sun); text-anchor: middle; }
+  .bs-ground, .bs-wall { stroke: var(--bs-sub); }
+  .bs-ground { stroke-width: 1.5; }
+  .bs-wall { stroke-width: 2.5; }
+  .bs-roof { stroke: var(--bs-sub); stroke-width: 4; stroke-linecap: round; fill: none; }
+  .bs-window { fill: var(--bs-accent); fill-opacity: 0.18; stroke: var(--bs-accent); stroke-width: 1.5; }
+  .bs-sill { stroke: var(--bs-sub); stroke-width: 2; }
+  .bs-critline { stroke: var(--bs-bad); stroke-width: 1.3; stroke-dasharray: 4 3; opacity: 0.8; }
+  .bs-critlabel { font-size: 8px; fill: var(--bs-bad); }
+  .bs-elevlabel { font-size: 8.5px; fill: var(--bs-sun); }
+
+  .bs-rows { margin-top: 10px; border-top: 1px solid var(--bs-line); }
+  .bs-row { padding: 7px 0 8px; border-bottom: 1px solid var(--bs-line); }
+  .bs-row:last-child { border-bottom: 0; }
+  .bs-row.bs-hidden { display: none; }
+  .bs-row-top { display: flex; align-items: baseline; gap: 7px; }
+  .bs-row-label { font-size: 0.86em; color: var(--bs-sub); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bs-row-ist { font-size: 1.0em; font-weight: 650; }
+  .bs-row-soll { font-size: 0.78em; color: var(--bs-faint); white-space: nowrap; }
+  .bs-chip { font-size: 0.72em; font-weight: 700; border-radius: 999px; padding: 1px 7px; flex: 0 0 auto; }
+  .bs-chip.ok { color: var(--bs-ok); background: var(--bs-ok-soft); }
+  .bs-chip.bad { color: var(--bs-bad); background: var(--bs-bad-soft); }
+  .bs-chip.wait { color: var(--bs-wait); background: var(--bs-wait-soft); }
+
+  .bs-track { position: relative; height: 5px; border-radius: 3px; background: var(--bs-track); margin-top: 6px; }
+  .bs-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; background: var(--bs-accent); opacity: 0.85; }
+  .bs-fill.bs-fill-bad { background: var(--bs-bad); opacity: 0.7; }
+  .bs-fill.bs-fill-wait { background: var(--bs-wait); }
+  .bs-band { position: absolute; top: -2px; bottom: -2px; background: var(--bs-band); border-radius: 2px; }
+  .bs-dot { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--bs-accent); border: 2px solid var(--bs-content); transform: translate(-50%, -50%); }
+
+  .bs-foot { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bs-line); font-size: 0.78em; color: var(--bs-faint); display: flex; flex-wrap: wrap; gap: 3px 10px; }
+  .bs-foot span:empty { display: none; }
+
+  /* Kompakt-Modus: Grafiken/Zeilen ausblenden, nur Kopf + Kompass */
+  .bs-tile.bs-compact .bs-cross,
+  .bs-tile.bs-compact .bs-rows,
+  .bs-tile.bs-compact .bs-foot { display: none; }
+  .bs-tile.bs-compact .bs-gfx { margin-bottom: 0; }
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById('bsTile');
+  var cfg = (typeof _config !== 'undefined' && _config && _config.labels) ? _config.labels : {};
+  var L = function (key, fallback) { return cfg[key] || fallback; };
+
+  function num(v, digits) {
+    if (v === null || v === undefined || isNaN(v)) { return '–'; }
+    return Number(v).toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function pct(v, lo, hi) {
+    if (hi <= lo) { return 0; }
+    return clamp(((v - lo) / (hi - lo)) * 100, 0, 100);
+  }
+  function timeOfDay(sec) {
+    if (sec === null || sec === undefined) { return '–'; }
+    var h = Math.floor(sec / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  function duration(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var h = Math.floor(sec / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    var s = sec % 60;
+    if (h > 0) { return h + ':' + (m < 10 ? '0' : '') + m + ' h'; }
+    return m + ':' + (s < 10 ? '0' : '') + s + ' min';
+  }
+
+  // Polarkoordinate: bearing 0=N(oben), 90=O(rechts), im Uhrzeigersinn.
+  function polar(cx, cy, r, bearing) {
+    var rad = (bearing - 90) * Math.PI / 180;
+    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  }
+
+  function sectorPath(cx, cy, r, fromB, toB) {
+    var span = ((toB - fromB) % 360 + 360) % 360;
+    var large = span > 180 ? 1 : 0;
+    var p1 = polar(cx, cy, r, fromB);
+    var p2 = polar(cx, cy, r, toB);
+    return 'M' + cx + ',' + cy + ' L' + p1[0].toFixed(1) + ',' + p1[1].toFixed(1) +
+      ' A' + r + ',' + r + ' 0 ' + large + ',1 ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1) + ' Z';
+  }
+
+  var ROWS = [
+    {
+      key: 'brightness', label: function (d) { return L('brightness', 'Helligkeit'); }, icon: '☀️',
+      show: function (d) { return d.brightness !== null; },
+      ist: function (d) { return num(d.brightness, 0) + ' lx'; },
+      soll: function (d) {
+        if (d.brightnessOn === null) { return ''; }
+        return 'Ein >' + num(d.brightnessOn, 0) + ' · Aus <' + num(d.brightnessOff, 0);
+      },
+      ok: function (d) { return d.brightnessOK; },
+      bar: function (d) {
+        if (d.brightness === null || d.brightnessOn === null) { return null; }
+        var hi = Math.max(d.brightness, d.brightnessOn, d.brightnessOff) * 1.3 || 1;
+        return {
+          fillPct: pct(d.brightness, 0, hi),
+          bandFrom: pct(Math.min(d.brightnessOff, d.brightnessOn), 0, hi),
+          bandTo: pct(Math.max(d.brightnessOff, d.brightnessOn), 0, hi),
+          kind: 'sun',
+        };
+      },
+    },
+    {
+      key: 'outdoorTemp', label: function () { return L('outdoorTemp', 'Außentemp.'); }, icon: '🌡️',
+      show: function (d) { return d.outdoorTemp !== null; },
+      ist: function (d) { return num(d.outdoorTemp, 1) + ' °C'; },
+      soll: function (d) {
+        if (d.tempOn === null) { return ''; }
+        return 'Ein >' + num(d.tempOn, 1) + ' · Aus <' + num(d.tempOff, 1);
+      },
+      ok: function (d) { return d.temperatureOK; },
+      bar: function (d) {
+        if (d.outdoorTemp === null || d.tempOn === null) { return null; }
+        var lo = -10, hi = 45;
+        return {
+          fillPct: pct(d.outdoorTemp, lo, hi),
+          bandFrom: pct(Math.min(d.tempOff, d.tempOn), lo, hi),
+          bandTo: pct(Math.max(d.tempOff, d.tempOn), lo, hi),
+          kind: d.temperatureOK ? 'sun' : 'bad',
+        };
+      },
+    },
+    {
+      key: 'indoorTemp', label: function () { return L('indoorTemp', 'Innentemp.'); }, icon: '🏠',
+      show: function (d) { return d.indoorTemp !== null; },
+      ist: function (d) { return num(d.indoorTemp, 1) + ' °C'; },
+      soll: function (d) {
+        if (d.indoorMin === null) { return ''; }
+        return num(d.indoorMin, 1) + ' – ' + num(d.indoorMax, 1) + ' °C';
+      },
+      ok: function (d) {
+        if (d.indoorTemp === null || d.indoorMin === null) { return null; }
+        return d.indoorTemp >= d.indoorMin && d.indoorTemp <= d.indoorMax;
+      },
+      bar: function (d) {
+        if (d.indoorTemp === null || d.indoorMin === null) { return null; }
+        var lo = d.indoorMin - 3, hi = d.indoorMax + 3;
+        return { dotPct: pct(d.indoorTemp, lo, hi), bandFrom: pct(d.indoorMin, lo, hi), bandTo: pct(d.indoorMax, lo, hi) };
+      },
+    },
+    {
+      key: 'sun', label: function () { return L('sunOnWindow', 'Sonne auf Fenster'); }, icon: '🧭',
+      show: function () { return true; },
+      ist: function (d) { return (d.azimuth === null ? '–' : num(d.azimuth, 0) + '°') + ' / ' + (d.elevation === null ? '–' : num(d.elevation, 0) + '°'); },
+      soll: function (d) { return num(d.facadeDirection - d.shadeAngleLeft, 0) + '–' + num(d.facadeDirection + d.shadeAngleRight, 0) + '° · >' + num(d.criticalElevation, 0) + '°'; },
+      ok: function (d) { return d.sunInWindow; },
+      bar: function () { return null; },
+    },
+    {
+      key: 'time', label: function () { return L('timeWindow', 'Zeitfenster'); }, icon: '⏰',
+      show: function (d) { return d.earliestSec !== null; },
+      ist: function (d) { return timeOfDay(d.nowSec); },
+      soll: function (d) { return timeOfDay(d.earliestSec) + ' – ' + timeOfDay(d.latestSec); },
+      ok: function (d) { return d.nowSec >= d.earliestSec && d.nowSec < d.latestSec; },
+      bar: function (d) {
+        if (d.earliestSec === null) { return null; }
+        return { dotPct: pct(d.nowSec, 0, 86400), bandFrom: pct(d.earliestSec, 0, 86400), bandTo: pct(d.latestSec, 0, 86400) };
+      },
+    },
+    {
+      key: 'lock', label: function () { return L('lockTime', 'Sperrzeit'); }, icon: '⏳',
+      show: function (d) { return d.lockTime > 0; },
+      ist: function (d) { return d.lockRemaining > 0 ? duration(d.lockRemaining) + ' übrig' : '–'; },
+      soll: function (d) { return 'von ' + duration(d.lockTime); },
+      ok: function (d) { return d.lockRemaining <= 0 ? true : null; },
+      waitChip: function (d) { return d.lockRemaining > 0; },
+      bar: function (d) {
+        if (d.lockTime <= 0) { return null; }
+        return { fillPct: pct(d.lockRemaining, 0, d.lockTime), kind: 'wait' };
+      },
+    },
+  ];
+
+  function chip(ok, waiting) {
+    if (waiting) { return '<span class="bs-chip wait">' + L('waitingChip', 'wartet') + '</span>'; }
+    if (ok === null || ok === undefined) { return ''; }
+    return ok ? '<span class="bs-chip ok">✓</span>' : '<span class="bs-chip bad">✗</span>';
+  }
+
+  function barHtml(bar) {
+    if (!bar) { return ''; }
+    var html = '<div class="bs-track">';
+    if (bar.bandFrom !== undefined) {
+      html += '<div class="bs-band" style="left:' + bar.bandFrom.toFixed(1) + '%;width:' + Math.max(0, bar.bandTo - bar.bandFrom).toFixed(1) + '%;"></div>';
+    }
+    if (bar.fillPct !== undefined) {
+      var cls = bar.kind === 'bad' ? ' bs-fill-bad' : (bar.kind === 'wait' ? ' bs-fill-wait' : '');
+      html += '<div class="bs-fill' + cls + '" style="width:' + bar.fillPct.toFixed(1) + '%;"></div>';
+    }
+    if (bar.dotPct !== undefined) {
+      html += '<div class="bs-dot" style="left:' + bar.dotPct.toFixed(1) + '%;"></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderRows(d) {
+    var out = '';
+    ROWS.forEach(function (row) {
+      if (!row.show(d)) { return; }
+      var soll = row.soll(d);
+      out += '<div class="bs-row">' +
+        '<div class="bs-row-top">' +
+        '<span class="bs-row-label">' + row.icon + ' ' + row.label(d) + '</span>' +
+        '<span class="bs-row-ist">' + row.ist(d) + '</span>' +
+        (soll ? '<span class="bs-row-soll">' + soll + '</span>' : '') +
+        chip(row.ok(d), row.waitChip ? row.waitChip(d) : false) +
+        '</div>' +
+        barHtml(row.bar(d)) +
+        '</div>';
+    });
+    root.querySelector('#bsRows').innerHTML = out;
+  }
+
+  function renderFoot(d) {
+    var parts = [];
+    if (d.lastMovement) {
+      var dt = new Date(d.lastMovement * 1000);
+      parts.push('🕐 ' + L('lastMovement', 'Letzte Bewegung') + ' ' + dt.toLocaleDateString('de-DE') + ' ' + dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
+    }
+    if (d.central) {
+      parts.push((d.cloudMode ? '⛅' : '☀️') + ' ' + L('alternativeMode', 'Alternativmodus') + ' ' + (d.cloudMode ? 'an' : 'aus'));
+      if (d.cloudMode) {
+        parts.push('☀️ ' + L('sunPercentage', 'Sonnenanteil') + ' ' + num(d.sunPercentage, 0) + ' %');
+      }
+    }
+    if (d.manualMode) {
+      parts.push('✋ ' + L('manualActive', 'Handbetrieb aktiv'));
+    }
+    if (d.blockedCount > 0) {
+      parts.push('🔒 ' + L('blockedSuffix', '{n} gesperrt').replace('{n}', d.blockedCount));
+    }
+    if (d.confirmed !== d.shaded && d.confirmMinutes > 0 && d.stableSince > 0) {
+      var stableFor = (Date.now() / 1000) - d.stableSince;
+      var needed = d.confirmMinutes * 60;
+      if (stableFor < needed) {
+        parts.push('🕒 ' + L('confirming', 'Wechsel in Bestätigung') + ' (' + duration(stableFor) + '/' + duration(needed) + ')');
+      }
+    }
+    root.querySelector('#bsFoot').innerHTML = parts.map(function (p) { return '<span>' + p + '</span>'; }).join('');
+  }
+
+  function renderCompass(d) {
+    var from = d.facadeDirection - d.shadeAngleLeft;
+    var to = d.facadeDirection + d.shadeAngleRight;
+    root.querySelector('#bsSector').setAttribute('d', sectorPath(64, 64, 50, from, to));
+
+    var wm = polar(64, 64, 29, d.facadeDirection);
+    var perp = d.facadeDirection + 90;
+    var wDx = Math.cos((perp - 90) * Math.PI / 180) * 1.5;
+    var wDy = Math.sin((perp - 90) * Math.PI / 180) * 1.5;
+    root.querySelector('#bsWinMark').setAttribute('x', (wm[0] - wDx - 1.5).toFixed(1));
+    root.querySelector('#bsWinMark').setAttribute('y', (wm[1] - wDy - 9).toFixed(1));
+    root.querySelector('#bsWinMark').setAttribute('transform', 'rotate(' + d.facadeDirection + ' ' + wm[0].toFixed(1) + ' ' + wm[1].toFixed(1) + ')');
+
+    var ray = root.querySelector('#bsSunRay');
+    var dot = root.querySelector('#bsSunDot');
+    var azLabel = root.querySelector('#bsAzLabel');
+    if (d.azimuth === null) {
+      ray.style.display = 'none';
+      dot.style.display = 'none';
+      azLabel.textContent = '';
+      return;
+    }
+    ray.style.display = '';
+    dot.style.display = '';
+    var p1 = polar(64, 64, 50, d.azimuth);
+    var p2 = polar(64, 64, 62, d.azimuth);
+    ray.setAttribute('x1', 64); ray.setAttribute('y1', 64);
+    ray.setAttribute('x2', p1[0].toFixed(1)); ray.setAttribute('y2', p1[1].toFixed(1));
+    dot.setAttribute('cx', p2[0].toFixed(1)); dot.setAttribute('cy', p2[1].toFixed(1));
+    var lit = d.sunInWindow;
+    ray.classList.toggle('bs-off', !lit);
+    dot.classList.toggle('bs-off', !lit);
+    azLabel.setAttribute('x', p2[0].toFixed(1));
+    azLabel.setAttribute('y', (p2[1] - 10).toFixed(1));
+    azLabel.textContent = num(d.azimuth, 0) + '°';
+  }
+
+  function elevPoint(anchorX, anchorY, elevDeg, len) {
+    var rad = clamp(elevDeg, -10, 90) * Math.PI / 180;
+    return [anchorX - Math.cos(rad) * len, anchorY - Math.sin(rad) * len];
+  }
+
+  function renderCross(d) {
+    var anchorX = 95, anchorY = 74;
+    var critLine = root.querySelector('#bsCritLine');
+    var critLabel = root.querySelector('#bsCritLabel');
+    var cp = elevPoint(anchorX, anchorY, d.criticalElevation, 78);
+    critLine.setAttribute('x1', anchorX); critLine.setAttribute('y1', anchorY);
+    critLine.setAttribute('x2', cp[0].toFixed(1)); critLine.setAttribute('y2', cp[1].toFixed(1));
+    critLabel.setAttribute('x', (cp[0] - 4).toFixed(1));
+    critLabel.setAttribute('y', (cp[1] + 4).toFixed(1));
+    critLabel.textContent = 'krit. ' + num(d.criticalElevation, 0) + '°';
+
+    var ray = root.querySelector('#bsElevRay');
+    var dot = root.querySelector('#bsElevDot');
+    var label = root.querySelector('#bsElevLabel');
+    if (d.elevation === null) {
+      ray.style.display = 'none';
+      dot.style.display = 'none';
+      label.textContent = '';
+      return;
+    }
+    ray.style.display = '';
+    dot.style.display = '';
+    var ep = elevPoint(anchorX, anchorY, d.elevation, 78);
+    var dp = elevPoint(anchorX, anchorY, d.elevation, 90);
+    ray.setAttribute('x1', anchorX); ray.setAttribute('y1', anchorY);
+    ray.setAttribute('x2', ep[0].toFixed(1)); ray.setAttribute('y2', ep[1].toFixed(1));
+    dot.setAttribute('cx', dp[0].toFixed(1)); dot.setAttribute('cy', dp[1].toFixed(1));
+    var lit = d.sunInWindow;
+    ray.classList.toggle('bs-off', !lit);
+    dot.classList.toggle('bs-off', !lit);
+    label.setAttribute('x', (dp[0] - 6).toFixed(1));
+    label.setAttribute('y', (dp[1] - 6).toFixed(1));
+    label.textContent = num(d.elevation, 0) + '°';
+  }
+
+  function render(d) {
+    root.querySelector('#bsName').textContent = d.name || '';
+
+    var stateEl = root.querySelector('.bs-state');
+    stateEl.classList.toggle('is-shaded', !!d.shaded);
+    root.querySelector('#bsStateIcon').textContent = d.shaded ? '🪟' : '🔓';
+    root.querySelector('#bsStateText').textContent = d.shaded ? L('shaded', 'BESCHATTET') : L('open', 'OFFEN');
+    root.querySelector('#bsStateTarget').textContent = '· ' + L('target', 'Ziel') + ' ' + d.targetPosition + ' %';
+    root.querySelector('#bsReason').textContent = d.reason || '';
+
+    root.querySelector('#bsAutomationLabel').textContent = L('automation', 'Automatik');
+    var autoInput = root.querySelector('#bsAutomation');
+    autoInput.checked = !!d.automation;
+
+    renderCompass(d);
+    renderCross(d);
+    renderRows(d);
+    renderFoot(d);
+  }
+
+  var autoInputEl = root.querySelector('#bsAutomation');
+  autoInputEl.addEventListener('change', function () {
+    if (typeof requestAction === 'function') {
+      requestAction('Automation', autoInputEl.checked);
+    }
+  });
+
+  if (typeof ResizeObserver !== 'undefined') {
+    var ro = new ResizeObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        var h = entries[i].contentRect.height;
+        var w = entries[i].contentRect.width;
+        root.classList.toggle('bs-compact', h < 230 || w < 190);
+        root.style.fontSize = Math.max(10, Math.min(16, h / 24, w / 26)).toFixed(2) + 'px';
+      }
+    });
+    ro.observe(root);
+  }
+
+  window.handleMessage = function (data) {
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { return; }
+    }
+    if (!data || typeof data !== 'object') { return; }
+    render(data);
+  };
+})();
+</script>

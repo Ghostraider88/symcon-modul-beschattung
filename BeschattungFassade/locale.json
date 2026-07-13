@@ -63,7 +63,18 @@
             "Active": "Aktiv",
             "Inactive / no central instance": "Inaktiv / keine Steuerung verbunden",
             "Sun position source invalid": "Sonnenstandsquelle ungültig",
-            "Critical sensor invalid or stale": "Kritischer Sensor ungültig oder veraltet"
+            "Critical sensor invalid or stale": "Kritischer Sensor ungültig oder veraltet",
+            "Target": "Ziel",
+            "Brightness": "Helligkeit",
+            "Outdoor temp.": "Außentemp.",
+            "Indoor temp.": "Innentemp.",
+            "Time window": "Zeitfenster",
+            "Lock time": "Sperrzeit",
+            "waiting": "wartet",
+            "Alternative mode": "Alternativmodus",
+            "Sun percentage": "Sonnenanteil",
+            "Confirming change": "Wechsel in Bestätigung",
+            "{n} locked": "{n} gesperrt"
         }
     }
 }
