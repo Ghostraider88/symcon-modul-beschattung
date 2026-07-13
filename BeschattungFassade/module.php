@@ -398,8 +398,10 @@ class BeschattungFassade extends IPSModuleStrict
             ? ($azimut >= $azFrom || $azimut <= $azTo)
             : ($azimut >= $azFrom && $azimut <= $azTo);
 
+        // Endwinkel = obere Elevations-Grenze ("keine Beschattung über dieser
+        // Elevation"), 0 = deaktiviert. Untere Grenze bleibt der Dachvorsprung.
         $endAngle = (float) $this->ReadPropertyInteger('EndAngle');
-        $elevOK = ($elevation > $this->criticalElevation()) && ($elevation > $endAngle);
+        $elevOK = ($elevation > $this->criticalElevation()) && ($endAngle <= 0 || $elevation < $endAngle);
 
         return $azimutOK && $elevOK;
     }
