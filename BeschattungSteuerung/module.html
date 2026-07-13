@@ -1,9 +1,5 @@
 <div class="bs-tile" id="bsTile">
   <div class="bs-head">
-    <div class="bs-head-left">
-      <div class="bs-name" id="bsName"></div>
-      <div class="bs-title">Beschattung</div>
-    </div>
     <div class="bs-head-right">
       <div class="bs-toggle-label" id="bsAutomationLabel"></div>
       <label class="bs-toggle">
@@ -68,9 +64,7 @@
   }
   .bs-tile *, .bs-tile *::before, .bs-tile *::after { box-sizing: border-box; }
 
-  .bs-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .bs-name { font-size: 0.82em; color: var(--bs-sub); margin-bottom: 2px; }
-  .bs-title { font-size: 1.15em; font-weight: 700; }
+  .bs-head { display: flex; align-items: flex-start; justify-content: flex-end; gap: 10px; }
   .bs-head-right { text-align: right; flex: 0 0 auto; }
   .bs-toggle-label { font-size: 0.72em; color: var(--bs-faint); margin-bottom: 3px; }
   .bs-toggle { position: relative; display: inline-block; width: 38px; height: 22px; }
@@ -200,7 +194,6 @@
   }
 
   function render(d) {
-    root.querySelector('#bsName').textContent = d.name || '';
     root.querySelector('#bsAutomationLabel').textContent = L('automation', 'Automatik global');
     root.querySelector('#bsAutomation').checked = !!d.automationGlobal;
     renderGauge(d);

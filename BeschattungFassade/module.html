@@ -1,7 +1,6 @@
 <div class="bs-tile" id="bsTile">
   <div class="bs-head">
     <div class="bs-head-left">
-      <div class="bs-name" id="bsName"></div>
       <div class="bs-state">
         <span class="bs-state-icon" id="bsStateIcon"></span>
         <span class="bs-state-text" id="bsStateText"></span>
@@ -90,7 +89,6 @@
   .bs-tile *, .bs-tile *::before, .bs-tile *::after { box-sizing: border-box; }
 
   .bs-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .bs-name { font-size: 0.82em; color: var(--bs-sub); margin-bottom: 2px; }
   .bs-state { display: flex; align-items: baseline; gap: 6px; font-size: 1.28em; font-weight: 700; letter-spacing: 0.01em; }
   .bs-state-target { color: var(--bs-sub); font-weight: 500; font-size: 0.75em; }
   .bs-state.is-shaded .bs-state-text, .bs-state.is-shaded .bs-state-icon { color: var(--bs-accent); }
@@ -475,8 +473,6 @@
   }
 
   function render(d) {
-    root.querySelector('#bsName').textContent = d.name || '';
-
     var stateEl = root.querySelector('.bs-state');
     stateEl.classList.toggle('is-shaded', !!d.shaded);
     root.querySelector('#bsStateIcon').textContent = d.shaded ? '🪟' : '🔓';
