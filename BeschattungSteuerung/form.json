@@ -78,6 +78,64 @@
         },
         {
             "type": "ExpansionPanel",
+            "caption": "House shape (top view, for the facade compass graphic)",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Rough building proportions and roof shape, shared by all facades, so the compass graphic shows which roof side you're looking at."
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "HouseLength",
+                    "caption": "Length (along ridge direction)",
+                    "suffix": "m",
+                    "digits": 1,
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "HouseWidth",
+                    "caption": "Width (perpendicular to length)",
+                    "suffix": "m",
+                    "digits": 1,
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "HouseRotation",
+                    "caption": "Ridge/length-axis direction (compass, 0=N, 90=E)",
+                    "suffix": "°",
+                    "minimum": 0,
+                    "maximum": 360
+                },
+                {
+                    "type": "Select",
+                    "name": "RoofShape",
+                    "caption": "Roof shape",
+                    "options": [
+                        {
+                            "caption": "Gable (Sattel)",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Hip (Walm)",
+                            "value": 1
+                        },
+                        {
+                            "caption": "Shed / mono-pitch (Pult)",
+                            "value": 2
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "RoofHighSideFlip",
+                    "caption": "Shed roof only: high side on the other long edge (flip)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
             "caption": "Reliability",
             "items": [
                 {

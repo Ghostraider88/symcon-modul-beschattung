@@ -28,6 +28,10 @@ class BeschattungSteuerung extends IPSModuleStrict
     private const DEFAULT_INDOOR_MIN = 22.0;
     private const DEFAULT_INDOOR_MAX = 26.0;
 
+    private const ROOF_GABLE = 0; // Sattel
+    private const ROOF_HIP = 1;   // Walm
+    private const ROOF_SHED = 2;  // Pult
+
     public function Create(): void
     {
         parent::Create();
@@ -49,6 +53,13 @@ class BeschattungSteuerung extends IPSModuleStrict
         // --- Tagesende über Sonnenuntergang (optional) ---
         $this->RegisterPropertyBoolean('UseSunsetAsLatest', false);
         $this->RegisterPropertyInteger('SunsetID', 0); // Variable des Standortmoduls (Timestamp)
+
+        // --- Hausform (Draufsicht, für den Kompass in den Fassaden-Kacheln) ---
+        $this->RegisterPropertyFloat('HouseLength', 10.0);  // m, entlang der Firstrichtung
+        $this->RegisterPropertyFloat('HouseWidth', 8.0);    // m, rechtwinklig zur Firstrichtung
+        $this->RegisterPropertyInteger('HouseRotation', 0); // Kompassrichtung der Firstachse, 0-360°
+        $this->RegisterPropertyInteger('RoofShape', self::ROOF_GABLE);
+        $this->RegisterPropertyBoolean('RoofHighSideFlip', false); // nur Pultdach: hohe Seite auf der anderen Traufe
 
         // --- Anzeige ---
         $this->RegisterPropertyBoolean('EnableHTML', false); // TileVisu-Kachel deckt das jetzt ab
@@ -196,6 +207,11 @@ class BeschattungSteuerung extends IPSModuleStrict
             'automationGlobal' => (bool) $this->GetValue('AutomationGlobal'),
             'cloudMode'        => (bool) $this->GetValue('CloudMode'),
             'sunPercentage'    => (float) $this->GetValue('SunPercentage'),
+            'houseLength'      => $this->ReadPropertyFloat('HouseLength'),
+            'houseWidth'       => $this->ReadPropertyFloat('HouseWidth'),
+            'houseRotation'    => $this->ReadPropertyInteger('HouseRotation'),
+            'roofShape'        => $this->ReadPropertyInteger('RoofShape'),
+            'roofHighSideFlip' => $this->ReadPropertyBoolean('RoofHighSideFlip'),
         ]);
     }
 

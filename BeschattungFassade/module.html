@@ -27,7 +27,8 @@
         <polyline id="bsSunTrackFuture" class="bs-suntrack-future"/>
         <path id="bsSector" class="bs-sector" d=""/>
         <g id="bsSunTrackDots"></g>
-        <rect x="49" y="49" width="30" height="30" rx="2" class="bs-house"/>
+        <polygon id="bsHouse" class="bs-house"/>
+        <g id="bsRoofLines"></g>
         <rect id="bsWinMark" class="bs-winmark" x="0" y="0" width="3" height="18" rx="1"/>
         <line id="bsSunRay" class="bs-ray"/>
         <circle id="bsSunDot" class="bs-sundot" r="6"/>
@@ -129,6 +130,8 @@
   .bs-ring { fill: none; stroke: var(--bs-line); stroke-width: 1.5; }
   .bs-sector { fill: var(--bs-sun-soft); stroke: var(--bs-sun); stroke-width: 1; stroke-opacity: 0.55; }
   .bs-house { fill: none; stroke: var(--bs-sub); stroke-width: 1.5; }
+  .bs-roofline { stroke: var(--bs-sub); stroke-width: 1; opacity: 0.85; }
+  .bs-roofline-high { stroke-width: 1.7; opacity: 1; }
   .bs-winmark { fill: var(--bs-accent); }
   .bs-ray { stroke: var(--bs-sun); stroke-width: 2; stroke-linecap: round; }
   .bs-ray.bs-off { stroke: var(--bs-faint); }
@@ -243,6 +246,12 @@
   function polar(cx, cy, r, bearing) {
     var rad = (bearing - 90) * Math.PI / 180;
     return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  }
+
+  // Einheitsvektor in Kompassrichtung (0=N/oben, 90=O/rechts) - für gedrehte Formen.
+  function bearingVec(bearing) {
+    var rad = bearing * Math.PI / 180;
+    return [Math.sin(rad), -Math.cos(rad)];
   }
 
   function sectorPath(cx, cy, r, fromB, toB) {
@@ -533,8 +542,80 @@
     body.innerHTML = lines.slice(0, 15).join('<br>');
   }
 
+  /**
+   * Zeichnet die Hausform im Kompass maßstäblich anhand grober Länge/Breite
+   * und Firstrichtung (statt eines starren Quadrats), dazu ein einfaches
+   * Dach-Grundriss-Symbol je nach Dachform (First bei Sattel, First+Walm-
+   * Diagonalen bei Walm, hohe Traufe+Gefälle-Linien bei Pult) - so lässt
+   * sich auf einen Blick erkennen, welche Dachseite die Fassade zeigt.
+   */
+  function renderHouse(d) {
+    var cx = 64, cy = 64;
+    var lenM = (typeof d.houseLength === 'number' && d.houseLength > 0) ? d.houseLength : 10;
+    var widM = (typeof d.houseWidth === 'number' && d.houseWidth > 0) ? d.houseWidth : 8;
+    var rotation = (typeof d.houseRotation === 'number') ? d.houseRotation : 0;
+    var scale = 34 / Math.max(lenM, widM);
+    var halfLen = Math.max(5, (lenM * scale) / 2);
+    var halfWid = Math.max(5, (widM * scale) / 2);
+
+    var axisLen = bearingVec(rotation);
+    var axisWid = bearingVec(rotation + 90);
+    var ridgeIsLength = halfLen >= halfWid;
+    var ridgeAxis = ridgeIsLength ? axisLen : axisWid;
+    var otherAxis = ridgeIsLength ? axisWid : axisLen;
+    var ridgeHalf = ridgeIsLength ? halfLen : halfWid;
+    var otherHalf = ridgeIsLength ? halfWid : halfLen;
+
+    function pt(a, b) {
+      return [cx + ridgeAxis[0] * a + otherAxis[0] * b, cy + ridgeAxis[1] * a + otherAxis[1] * b];
+    }
+    function fmt(p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }
+
+    var corners = [pt(ridgeHalf, otherHalf), pt(ridgeHalf, -otherHalf), pt(-ridgeHalf, -otherHalf), pt(-ridgeHalf, otherHalf)];
+    root.querySelector('#bsHouse').setAttribute('points', corners.map(fmt).join(' '));
+
+    var lines = [];
+    if (d.roofShape === 2) {
+      // Pult/Shed: hohe Traufe (betont) + parallele Gefälle-Linien zur niedrigen Traufe.
+      var sign = d.roofHighSideFlip ? -1 : 1;
+      lines.push({ a1: -ridgeHalf, b1: otherHalf * sign, a2: ridgeHalf, b2: otherHalf * sign, high: true });
+      var steps = 3;
+      for (var i = 1; i <= steps; i++) {
+        var b = otherHalf * sign * (1 - (2 * i / (steps + 1)));
+        lines.push({ a1: -ridgeHalf, b1: b, a2: ridgeHalf, b2: b });
+      }
+    } else if (d.roofShape === 1) {
+      // Walm/Hip: eingerückter First (ggf. Punkt) + vier Diagonalen zu den Ecken.
+      var ridgeHalf2 = Math.max(0, ridgeHalf - otherHalf);
+      if (ridgeHalf2 > 0.5) {
+        lines.push({ a1: -ridgeHalf2, b1: 0, a2: ridgeHalf2, b2: 0 });
+      }
+      lines.push({ a1: -ridgeHalf2, b1: 0, a2: -ridgeHalf, b2: otherHalf });
+      lines.push({ a1: -ridgeHalf2, b1: 0, a2: -ridgeHalf, b2: -otherHalf });
+      lines.push({ a1: ridgeHalf2, b1: 0, a2: ridgeHalf, b2: otherHalf });
+      lines.push({ a1: ridgeHalf2, b1: 0, a2: ridgeHalf, b2: -otherHalf });
+    } else {
+      // Sattel/Gable: First mittig über die volle Länge.
+      lines.push({ a1: -ridgeHalf, b1: 0, a2: ridgeHalf, b2: 0 });
+    }
+
+    var group = root.querySelector('#bsRoofLines');
+    while (group.firstChild) { group.removeChild(group.firstChild); }
+    lines.forEach(function (l) {
+      var p1 = pt(l.a1, l.b1), p2 = pt(l.a2, l.b2);
+      var line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', p1[0].toFixed(1));
+      line.setAttribute('y1', p1[1].toFixed(1));
+      line.setAttribute('x2', p2[0].toFixed(1));
+      line.setAttribute('y2', p2[1].toFixed(1));
+      line.setAttribute('class', 'bs-roofline' + (l.high ? ' bs-roofline-high' : ''));
+      group.appendChild(line);
+    });
+  }
+
   function renderCompass(d) {
     renderSunTrack(d);
+    renderHouse(d);
 
     var from = d.facadeDirection - d.shadeAngleLeft;
     var to = d.facadeDirection + d.shadeAngleRight;

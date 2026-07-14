@@ -11,6 +11,10 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
 * **Wolkenerkennung**: führt eine Helligkeits-Historie, erkennt wechselhafte
   Lichtverhältnisse (Alternativmodus) und ermittelt den Sonnenscheinanteil.
 * **Tagesende per Sonnenuntergang** (optional) statt fester „spätestens"-Zeit.
+* **Hausform** (Länge, Breite, Firstrichtung, Dachform Sattel/Walm/Pult): grobe, für alle
+  Fassaden gemeinsame Gebäudeform, die im Kompass jeder Fassaden-Kachel maßstäblich mit
+  passendem Dach-Grundriss-Symbol dargestellt wird, statt eines starren Quadrats – so ist
+  auf einen Blick erkennbar, welche Dachseite die jeweilige Fassade zeigt.
 * Stellt allen Fassaden die zentralen Daten gebündelt bereit (`BSTRG_GetCentralData`).
 * **TileVisu-Kachel**: Sonnenscheinanteil als Ring-Gauge (50 %-Marke = Alternativmodus-
   Schwelle), Helligkeitswechsel als Balken mit Ein-/Aus-Schwellenmarken, darunter eine
@@ -30,6 +34,7 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
 |---|---|
 | Wolkenerkennung | Helligkeitssensor, Sensor-Einheit (nur Anzeige, z. B. „lx" oder „W/m²"), Sonnig-Schwelle, Wechseltoleranz, Beobachtungszeitraum, Ein-/Aus-Grenzen, Intervall |
 | Tagesende / Sonnenuntergang | Sonnenuntergang als Tagesende aktivieren + Sonnenuntergangs-Variable |
+| Hausform | Länge, Breite, Firstrichtung, Dachform (Sattel/Walm/Pult), bei Pult zusätzlich Seite der hohen Traufe |
 | Zuverlässigkeit | Maximales Sensoralter (Staleness-Erkennung) |
 
 Die zentralen Schwellwerte/Zeiten werden als **Variablen** unterhalb der Instanz angelegt

@@ -47,7 +47,10 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   Zustand, Zielposition und Entscheidungsgrund, Ist-Position je Aktor (inkl. 🔒 bei
   gesperrten), ein Draufsicht-Kompass (Sonnenstand relativ zum Beschattungsfenster,
   inkl. bisheriger Sonnenbahn der letzten 3 Std. und kurzer Prognose der nächsten
-  Stunde) und ein Hausquerschnitt (Sonnenelevation gegen Dachvorsprung/kritischen
+  Stunde) mit maßstäblich nach Länge/Breite/Firstrichtung gezeichneter Hausform und
+  passendem Dach-Grundriss-Symbol (First bei Sattel, First+Diagonalen bei Walm, betonte
+  hohe Traufe mit Gefälle-Linien bei Pult – Werte aus der zentralen Instanz, siehe dort)
+  und ein Hausquerschnitt (Sonnenelevation gegen Dachvorsprung/kritischen
   Winkel), darunter Ist-/Soll-Zeilen für Helligkeit, Außen-/Innentemperatur,
   Zeitfenster und Sperrzeit mit ✓/✗ – Zeilen, die gerade nicht ausschlaggebend sind
   (z. B. Helligkeit bei Rundumbeschattung), werden ausgegraut. Fußzeile zeigt u. a.

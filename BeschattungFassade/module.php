@@ -1105,7 +1105,12 @@ class BeschattungFassade extends IPSModuleStrict
             'dailyMoves'          => $this->ReadAttributeInteger('DailyMoveCount'),
             'dailyShadedSeconds'  => $this->ReadAttributeInteger('DailyShadedSeconds')
                 + ($this->ReadAttributeInteger('DailyShadeStart') > 0 ? time() - $this->ReadAttributeInteger('DailyShadeStart') : 0),
-            'protocolHtml'      => $this->ReadPropertyBoolean('EnableProtocol') ? (string) $this->GetValue('Protocol') : '',
+            'protocolHtml'        => $this->ReadPropertyBoolean('EnableProtocol') ? (string) $this->GetValue('Protocol') : '',
+            'houseLength'         => (float) ($central['houseLength'] ?? 10.0),
+            'houseWidth'          => (float) ($central['houseWidth'] ?? 8.0),
+            'houseRotation'       => (int) ($central['houseRotation'] ?? 0),
+            'roofShape'           => (int) ($central['roofShape'] ?? 0),
+            'roofHighSideFlip'    => (bool) ($central['roofHighSideFlip'] ?? false),
         ];
     }
 
