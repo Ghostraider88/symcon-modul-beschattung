@@ -869,11 +869,30 @@ class BeschattungFassade extends IPSModuleStrict
         foreach ($this->validActuators() as $act) {
             $id = $act['ActuatorID'];
             $result[] = [
+                'label'    => $this->actuatorLabel($id),
                 'position' => $this->variableValid($id) ? (int) GetValue($id) : null,
                 'blocked'  => $this->actuatorBlocked($act),
             ];
         }
         return $result;
+    }
+
+    /**
+     * Bezeichnung eines Aktors für die Kachel: bevorzugt der Name der
+     * übergeordneten Geräte-Instanz (z. B. "Rollladen Büro"), da die
+     * Positions-Variable selbst meist generisch heißt (z. B. "Position").
+     * Fällt auf den Variablennamen zurück, falls kein Parent ermittelbar ist.
+     */
+    private function actuatorLabel(int $id): string
+    {
+        $parentID = @IPS_GetParent($id);
+        if ($parentID > 0 && @IPS_InstanceExists($parentID)) {
+            $name = @IPS_GetName($parentID);
+            if (is_string($name) && $name !== '') {
+                return $name;
+            }
+        }
+        return (string) @IPS_GetName($id);
     }
 
     private function moveActuator(array $act, int $position): void
