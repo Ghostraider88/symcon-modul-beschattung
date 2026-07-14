@@ -54,9 +54,11 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   Winkel), darunter Ist-/Soll-Zeilen für Helligkeit, Außen-/Innentemperatur,
   Zeitfenster und Sperrzeit mit ✓/✗ – Zeilen, die gerade nicht ausschlaggebend sind
   (z. B. Helligkeit bei Rundumbeschattung), werden ausgegraut. Fußzeile zeigt u. a.
-  Fahrten und kumulierte Beschattungsdauer des heutigen Tages. Im ausgeklappten
-  Vollbild zusätzlich die letzten Protokoll-Einträge. Einziges Bedienelement ist der
-  Automatik-Schalter. Alle bisherigen Statusvariablen bleiben unverändert bestehen.
+  Fahrten und kumulierte Beschattungsdauer des heutigen Tages, darunter die
+  Ist-Position je Aktor. Das Protokoll ist nicht mehr dauerhaft sichtbar, sondern
+  über einen Button als Popup abrufbar, um die Kachel übersichtlich zu halten.
+  Einziges Bedienelement ist der Automatik-Schalter. Alle bisherigen
+  Statusvariablen bleiben unverändert bestehen.
 * **Sensor-Sättigungswarnung**: Bleibt der Helligkeitssensor trotz hohem Sonnenstand
   länger als 30 Minuten exakt unverändert (typisch bei einem Sensor am Ende seines
   Messbereichs), zeigt die Kachel ein ⚠️ an der Helligkeitszeile – rein diagnostisch,

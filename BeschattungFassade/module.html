@@ -17,8 +17,6 @@
     </div>
   </div>
 
-  <div class="bs-actuators" id="bsActuators"></div>
-
   <div class="bs-gfx">
     <figure class="bs-fig">
       <svg viewBox="0 0 128 128" class="bs-compass" aria-hidden="true">
@@ -60,9 +58,21 @@
   <div class="bs-rows" id="bsRows"></div>
   <div class="bs-foot" id="bsFoot"></div>
 
-  <div class="bs-protocol" id="bsProtocol">
-    <div class="bs-protocol-caption" id="bsProtocolCaption"></div>
-    <div class="bs-protocol-body" id="bsProtocolBody"></div>
+  <div class="bs-actuators" id="bsActuators"></div>
+
+  <button type="button" id="bsProtocolBtn" class="bs-protocol-btn" hidden>
+    <span>📜</span><span id="bsProtocolBtnLabel"></span>
+  </button>
+
+  <div class="bs-modal" id="bsProtocolModal" hidden>
+    <div class="bs-modal-backdrop" id="bsProtocolBackdrop"></div>
+    <div class="bs-modal-box">
+      <div class="bs-modal-head">
+        <span id="bsProtocolCaption"></span>
+        <button type="button" id="bsProtocolClose" class="bs-modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="bs-protocol-body" id="bsProtocolBody"></div>
+    </div>
   </div>
 </div>
 
@@ -96,6 +106,7 @@
     height: 100%;
     overflow: hidden;
     font-variant-numeric: tabular-nums;
+    position: relative;
   }
   .bs-tile *, .bs-tile *::before, .bs-tile *::after { box-sizing: border-box; }
 
@@ -105,7 +116,8 @@
   .bs-state.is-shaded .bs-state-text, .bs-state.is-shaded .bs-state-icon { color: var(--bs-accent); }
   .bs-reason { font-size: 0.86em; color: var(--bs-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .bs-actuators { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+  .bs-actuators { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--bs-line); }
+  .bs-actuators:empty { display: none; }
   .bs-actrow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 0.8em; }
   .bs-actrow-label { color: var(--bs-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; }
   .bs-actrow-value { font-weight: 700; flex: 0 0 auto; color: var(--bs-text); }
@@ -177,16 +189,39 @@
   .bs-foot { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bs-line); font-size: 0.78em; color: var(--bs-faint); display: flex; flex-wrap: wrap; gap: 3px 10px; }
   .bs-foot span:empty { display: none; }
 
-  .bs-protocol { display: none; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--bs-line); }
-  .bs-protocol-caption { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-faint); margin-bottom: 4px; }
-  .bs-protocol-body { font-size: 0.78em; line-height: 1.5; max-height: 220px; overflow-y: auto; }
-  .bs-tile.bs-expanded .bs-protocol { display: block; }
+  .bs-protocol-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 10px; padding: 7px 10px;
+    border: 1px solid var(--bs-line); border-radius: 8px; background: transparent;
+    color: var(--bs-sub); font: inherit; font-size: 0.82em; cursor: pointer;
+  }
+  .bs-protocol-btn:hover { background: var(--bs-track); }
+  .bs-protocol-btn[hidden] { display: none; }
+
+  .bs-modal { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 10px; }
+  .bs-modal[hidden] { display: none; }
+  .bs-modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+  .bs-modal-box {
+    position: relative; display: flex; flex-direction: column;
+    width: 100%; max-width: 100%; max-height: 100%;
+    background: var(--bs-content); color: var(--bs-text);
+    border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); overflow: hidden;
+  }
+  .bs-modal-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 12px; border-bottom: 1px solid var(--bs-line);
+    font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-faint);
+  }
+  .bs-modal-close { background: none; border: none; color: var(--bs-sub); font-size: 1.1em; line-height: 1; cursor: pointer; padding: 4px; }
+  .bs-modal-close:hover { color: var(--bs-text); }
+  .bs-protocol-body { font-size: 0.82em; line-height: 1.6; padding: 10px 12px; overflow-y: auto; }
 
   /* Kompakt-Modus: Grafiken/Zeilen ausblenden, nur Kopf + Kompass */
   .bs-tile.bs-compact .bs-cross,
   .bs-tile.bs-compact .bs-rows,
   .bs-tile.bs-compact .bs-actuators,
-  .bs-tile.bs-compact .bs-foot { display: none; }
+  .bs-tile.bs-compact .bs-foot,
+  .bs-tile.bs-compact .bs-protocol-btn { display: none; }
   .bs-tile.bs-compact .bs-gfx { margin-bottom: 0; }
 
   @media (prefers-color-scheme: dark) {
@@ -529,17 +564,28 @@
     }).join(' '));
   }
 
+  function closeProtocolModal() {
+    var modal = root.querySelector('#bsProtocolModal');
+    if (modal) { modal.hidden = true; }
+  }
+
   function renderProtocol(d) {
-    var body = root.querySelector('#bsProtocolBody');
+    var btn = root.querySelector('#bsProtocolBtn');
+    var btnLabel = root.querySelector('#bsProtocolBtnLabel');
     var caption = root.querySelector('#bsProtocolCaption');
+    var body = root.querySelector('#bsProtocolBody');
     if (!d.protocolHtml) {
+      btn.hidden = true;
       body.innerHTML = '';
       caption.textContent = '';
+      closeProtocolModal();
       return;
     }
+    btn.hidden = false;
+    btnLabel.textContent = L('protocolLabel', 'Protokoll');
     caption.textContent = L('protocolLabel', 'Protokoll');
     var lines = d.protocolHtml.split('<br>').filter(function (l) { return l.trim().length > 0; });
-    body.innerHTML = lines.slice(0, 15).join('<br>');
+    body.innerHTML = lines.slice(0, 60).join('<br>');
   }
 
   /**
@@ -720,13 +766,18 @@
     }
   });
 
+  root.querySelector('#bsProtocolBtn').addEventListener('click', function () {
+    root.querySelector('#bsProtocolModal').hidden = false;
+  });
+  root.querySelector('#bsProtocolClose').addEventListener('click', closeProtocolModal);
+  root.querySelector('#bsProtocolBackdrop').addEventListener('click', closeProtocolModal);
+
   if (typeof ResizeObserver !== 'undefined') {
     var ro = new ResizeObserver(function (entries) {
       for (var i = 0; i < entries.length; i++) {
         var h = entries[i].contentRect.height;
         var w = entries[i].contentRect.width;
         root.classList.toggle('bs-compact', h < 230 || w < 190);
-        root.classList.toggle('bs-expanded', h > 420);
         root.style.fontSize = Math.max(10, Math.min(16, h / 24, w / 26)).toFixed(2) + 'px';
       }
     });
