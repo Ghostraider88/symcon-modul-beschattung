@@ -25,11 +25,22 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   die Sonderfälle „Automatik aus", Handbetrieb, Tagesende und Fail-Safe greifen
   weiterhin sofort. 0 = deaktiviert (altes Verhalten).
 * **Tagesende**: Behänge öffnen oder Position halten.
-* Mehrere Aktoren je Fassade mit optionaler **individueller Beschattungsposition** und
-  optionaler **Sperrvariable je Aktor** („Kinderzimmer"-Funktion): Solange die
-  zugeordnete Variable `True` ist, bleibt **dieser** Rollladen unverändert stehen –
-  die übrigen Aktoren/Fassaden fahren normal weiter. Wird die Variable wieder `False`,
-  zieht der Aktor automatisch in die aktuell gültige Position nach.
+* Mehrere Aktoren je Fassade mit optionalem **Anzeigenamen** (z. B. „Fenster links",
+  „Kinderzimmer" – überschreibt den sonst automatisch aus der übergeordneten
+  Geräte-Instanz ermittelten, oft technischen Namen), optionaler **individueller
+  Beschattungsposition** und optionaler **Sperrvariable je Aktor**
+  („Kinderzimmer"-Funktion): Solange die zugeordnete Variable `True` ist, bleibt
+  **dieser** Rollladen unverändert stehen – die übrigen Aktoren/Fassaden fahren
+  normal weiter. Wird die Variable wieder `False`, zieht der Aktor automatisch in
+  die aktuell gültige Position nach (ohne dabei als Fahrt gezählt zu werden, falls
+  er sich ohnehin schon in der Zielposition befindet).
+* **Überschreibung zentraler Werte je Fassade** (optional): Einzelne Fassaden können
+  von den Werten der zentralen „Beschattung Steuerung"-Instanz abweichen – z. B.
+  Frühestens-/Spätestens-Zeit (wahlweise als feste Uhrzeit oder als
+  Sonnenuntergang einer beliebigen Standortmodul-Variable), Sperrzeit,
+  Helligkeits-/Außentemperatur-Schwellen, Rundumbeschattungs-Temperatur und
+  Innentemperatur-Bereich. Nicht überschriebene Werte folgen weiterhin der
+  zentralen Instanz.
 * **Fail-Safe** bei ungültigen/veralteten Sensoren (Position halten / öffnen / beschatten).
 * Reservierte Wind-/Regen-Eingänge (noch ohne aktive Logik).
 * **TileVisu-Kachel**: Die Instanz erscheint als grafische Kachel in der TileVisu –
@@ -63,7 +74,8 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 | Sonnenstand & Sensoren | Azimut, Elevation; optional Helligkeit, Außen-/Innentemperatur |
 | Ausrichtung | Fassadenrichtung, Beschattungswinkel links/rechts |
 | Geometrie | Dachhöhe, Dachvorsprung, Fensterbretthöhe, Endwinkel |
-| Aktoren & Positionen | Aktorliste, Beschattungs-/Offen-Position (Default 70 % / 0 %) |
+| Aktoren & Positionen | Aktorliste (je Aktor Variable, Anzeigename, individuelle Position, Sperrvariable), Beschattungs-/Offen-Position (Default 70 % / 0 %) |
+| Überschreibungen | Je Fassade optional: Frühestens/Spätestens (fest oder Sonnenuntergang), Sperrzeit, Helligkeits-/Außentemperatur-Schwellen, Rundumbeschattungs-Temperatur, Innentemperatur-Bereich |
 | Verhalten & Sicherheit | Tagesende, Fail-Safe, Intervall, Sensoralter, mittlere Außentemp., Handbetrieb, Entscheidungs-Bestätigungszeit, Anzeige |
 
 ## Statusvariablen

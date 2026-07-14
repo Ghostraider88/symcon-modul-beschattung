@@ -24,6 +24,9 @@ class BeschattungFassade extends IPSModuleStrict
     private const FAILSAFE_OPEN = 1;
     private const FAILSAFE_SHADE = 2;
 
+    private const LATEST_MODE_FIXED = 0;
+    private const LATEST_MODE_SUNSET = 1;
+
     private const STEUERUNG_GUID = '{6D18227C-1720-4002-BDB0-071DB6B0C384}';
 
     public function Create(): void
@@ -60,6 +63,27 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterPropertyString('Actuators', '[]');
         $this->RegisterPropertyInteger('ShadePosition', 70); // % (0 = offen, 100 = geschlossen)
         $this->RegisterPropertyInteger('OpenPosition', 0);
+
+        // --- Überschreibung zentraler Werte (optional, je Fassade) ---
+        $this->RegisterPropertyBoolean('OverrideEarliest', false);
+        $this->RegisterPropertyString('OverrideEarliestTime', '08:00');
+        $this->RegisterPropertyBoolean('OverrideLatest', false);
+        $this->RegisterPropertyInteger('OverrideLatestMode', self::LATEST_MODE_FIXED);
+        $this->RegisterPropertyString('OverrideLatestTime', '20:45');
+        $this->RegisterPropertyInteger('OverrideLatestSunsetID', 0);
+        $this->RegisterPropertyBoolean('OverrideLockTime', false);
+        $this->RegisterPropertyInteger('OverrideLockTimeValue', 900);
+        $this->RegisterPropertyBoolean('OverrideBrightness', false);
+        $this->RegisterPropertyInteger('OverrideBrightnessOn', 21000);
+        $this->RegisterPropertyInteger('OverrideBrightnessOff', 19000);
+        $this->RegisterPropertyBoolean('OverrideTemp', false);
+        $this->RegisterPropertyFloat('OverrideTempOn', 22.5);
+        $this->RegisterPropertyFloat('OverrideTempOff', 21.5);
+        $this->RegisterPropertyBoolean('OverrideTempAllAround', false);
+        $this->RegisterPropertyFloat('OverrideTempAllAroundValue', 30.0);
+        $this->RegisterPropertyBoolean('OverrideIndoor', false);
+        $this->RegisterPropertyFloat('OverrideIndoorMin', 22.0);
+        $this->RegisterPropertyFloat('OverrideIndoorMax', 26.0);
 
         // --- Verhalten ---
         $this->RegisterPropertyInteger('EveningBehavior', self::EVENING_OPEN);
@@ -423,6 +447,66 @@ class BeschattungFassade extends IPSModuleStrict
         return $azimutOK && $elevOK;
     }
 
+    /**
+     * Wendet die je Fassade optional aktivierten Überschreibungen auf die von
+     * der Steuerung gelieferten zentralen Werte an. So kann z. B. eine
+     * einzelne Fassade abweichend von den übrigen erst mit Sonnenuntergang
+     * statt zu fester Uhrzeit öffnen, oder eigene Schwellwerte nutzen.
+     */
+    private function applyOverrides(array $central): array
+    {
+        if ($this->ReadPropertyBoolean('OverrideEarliest')) {
+            $central['earliestSec'] = $this->timeStringToSeconds($this->ReadPropertyString('OverrideEarliestTime'));
+        }
+        if ($this->ReadPropertyBoolean('OverrideLatest')) {
+            $latestSec = null;
+            if ($this->ReadPropertyInteger('OverrideLatestMode') === self::LATEST_MODE_SUNSET) {
+                $sunsetID = $this->ReadPropertyInteger('OverrideLatestSunsetID');
+                if ($this->variableValid($sunsetID)) {
+                    $ts = (int) GetValue($sunsetID);
+                    if ($ts > 0) {
+                        $latestSec = ((int) date('H', $ts) * 3600) + ((int) date('i', $ts) * 60);
+                    }
+                }
+            } else {
+                $latestSec = $this->timeStringToSeconds($this->ReadPropertyString('OverrideLatestTime'));
+            }
+            if ($latestSec !== null) {
+                $central['latestSec'] = $latestSec;
+            }
+        }
+        if ($this->ReadPropertyBoolean('OverrideLockTime')) {
+            $central['lockTime'] = $this->ReadPropertyInteger('OverrideLockTimeValue');
+        }
+        if ($this->ReadPropertyBoolean('OverrideBrightness')) {
+            $central['brightnessOn'] = $this->ReadPropertyInteger('OverrideBrightnessOn');
+            $central['brightnessOff'] = $this->ReadPropertyInteger('OverrideBrightnessOff');
+        }
+        if ($this->ReadPropertyBoolean('OverrideTemp')) {
+            $central['tempOn'] = $this->ReadPropertyFloat('OverrideTempOn');
+            $central['tempOff'] = $this->ReadPropertyFloat('OverrideTempOff');
+        }
+        if ($this->ReadPropertyBoolean('OverrideTempAllAround')) {
+            $central['tempAllAround'] = $this->ReadPropertyFloat('OverrideTempAllAroundValue');
+        }
+        if ($this->ReadPropertyBoolean('OverrideIndoor')) {
+            $central['indoorMin'] = $this->ReadPropertyFloat('OverrideIndoorMin');
+            $central['indoorMax'] = $this->ReadPropertyFloat('OverrideIndoorMax');
+        }
+        return $central;
+    }
+
+    /** Wandelt "HH:MM" in Sekunden seit Mitternacht; ungültige Eingabe -> 0. */
+    private function timeStringToSeconds(string $time): int
+    {
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', trim($time), $m) !== 1) {
+            return 0;
+        }
+        $hour = min(23, max(0, (int) $m[1]));
+        $minute = min(59, max(0, (int) $m[2]));
+        return ($hour * 3600) + ($minute * 60);
+    }
+
     /** Winkel, ab dem der Dachvorsprung die Sonne nicht mehr auf das Fenster lässt. */
     private function criticalElevation(): float
     {
@@ -723,6 +807,17 @@ class BeschattungFassade extends IPSModuleStrict
             }
 
             $target = $shade ? $this->actuatorShadePosition($act) : $this->ReadPropertyInteger('OpenPosition');
+
+            // Steht der Aktor (z. B. nach Neustart mit unbekanntem Zustand oder
+            // durch Fremdsteuerung) bereits auf der Zielposition, wäre die Fahrt
+            // wirkungslos: Zustand übernehmen, aber weder fahren noch als
+            // Bewegung zählen (verhindert Phantom-Einträge in Protokoll/Statistik).
+            $current = $this->variableValid($act['ActuatorID']) ? (int) GetValue($act['ActuatorID']) : null;
+            if ($current !== null && $current === $target) {
+                $modeMap[$key] = $shade;
+                continue;
+            }
+
             $this->moveActuator($act, $target);
             $modeMap[$key] = $shade;
             if ($firstPos === null) {
@@ -816,7 +911,7 @@ class BeschattungFassade extends IPSModuleStrict
     // Aktor-Helfer
     // ------------------------------------------------------------------
 
-    /** @return list<array{ActuatorID:int,ShadePosition:int,DisableID:int}> */
+    /** @return list<array{ActuatorID:int,ShadePosition:int,DisableID:int,DisplayName:string}> */
     private function validActuators(): array
     {
         $list = json_decode($this->ReadPropertyString('Actuators'), true);
@@ -833,6 +928,7 @@ class BeschattungFassade extends IPSModuleStrict
                 'ActuatorID'    => $id,
                 'ShadePosition' => (int) ($entry['ShadePosition'] ?? -1),
                 'DisableID'     => (int) ($entry['DisableID'] ?? 0),
+                'DisplayName'   => trim((string) ($entry['DisplayName'] ?? '')),
             ];
         }
         return $result;
@@ -862,14 +958,14 @@ class BeschattungFassade extends IPSModuleStrict
         return $count;
     }
 
-    /** @return list<array{position:int|null,blocked:bool}> Ist-Position je Aktor für die Kachel. */
+    /** @return list<array{label:string,position:int|null,blocked:bool}> Ist-Position je Aktor für die Kachel. */
     private function actuatorStatuses(): array
     {
         $result = [];
         foreach ($this->validActuators() as $act) {
             $id = $act['ActuatorID'];
             $result[] = [
-                'label'    => $this->actuatorLabel($id),
+                'label'    => $this->actuatorLabel($act),
                 'position' => $this->variableValid($id) ? (int) GetValue($id) : null,
                 'blocked'  => $this->actuatorBlocked($act),
             ];
@@ -878,13 +974,18 @@ class BeschattungFassade extends IPSModuleStrict
     }
 
     /**
-     * Bezeichnung eines Aktors für die Kachel: bevorzugt der Name der
-     * übergeordneten Geräte-Instanz (z. B. "Rollladen Büro"), da die
-     * Positions-Variable selbst meist generisch heißt (z. B. "Position").
-     * Fällt auf den Variablennamen zurück, falls kein Parent ermittelbar ist.
+     * Bezeichnung eines Aktors für die Kachel: bevorzugt den vom Nutzer
+     * eingetragenen Anzeigenamen, sonst den Namen der übergeordneten
+     * Geräte-Instanz (z. B. "Rollladen Büro"), da die Positions-Variable
+     * selbst meist generisch/technisch heißt (z. B. "K79.Rolladen"). Fällt auf
+     * den Variablennamen zurück, falls kein Parent ermittelbar ist.
      */
-    private function actuatorLabel(int $id): string
+    private function actuatorLabel(array $act): string
     {
+        if ($act['DisplayName'] !== '') {
+            return $act['DisplayName'];
+        }
+        $id = $act['ActuatorID'];
         $parentID = @IPS_GetParent($id);
         if ($parentID > 0 && @IPS_InstanceExists($parentID)) {
             $name = @IPS_GetName($parentID);
@@ -933,7 +1034,7 @@ class BeschattungFassade extends IPSModuleStrict
             return null;
         }
         $data = json_decode((string) $raw, true);
-        return is_array($data) ? $data : null;
+        return is_array($data) ? $this->applyOverrides($data) : null;
     }
 
     /** Sammelt alle für die Kachel relevanten Ist-/Soll-Werte als JSON-fähiges Array. */
@@ -1140,6 +1241,12 @@ HTML;
                 $this->RegisterReference($id);
                 $this->RegisterMessage($id, VM_UPDATE);
             }
+        }
+
+        // Sonnenuntergangs-Variable (nur bei aktivierter Tagesende-Überschreibung)
+        $sunsetID = $this->ReadPropertyInteger('OverrideLatestSunsetID');
+        if ($this->variableValid($sunsetID)) {
+            $this->RegisterReference($sunsetID);
         }
 
         // Sperrvariablen der Aktoren (z. B. Kinderzimmer/Ausschlafen) ebenfalls

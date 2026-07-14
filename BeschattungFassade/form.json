@@ -126,6 +126,15 @@
                             }
                         },
                         {
+                            "caption": "Display name (optional, e.g. room/window; overrides auto-detected name)",
+                            "name": "DisplayName",
+                            "width": "220px",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
                             "caption": "Individual shade position (-1 = facade default)",
                             "name": "ShadePosition",
                             "width": "260px",
@@ -163,6 +172,135 @@
                     "suffix": "%",
                     "minimum": 0,
                     "maximum": 100
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Overrides (replace central values for this facade)",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Optional: let this facade deviate from the central instance's values, e.g. a different end-of-day time or its own thresholds."
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideEarliest",
+                    "caption": "Override earliest time"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "OverrideEarliestTime",
+                    "caption": "Earliest (HH:MM)",
+                    "validate": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideLatest",
+                    "caption": "Override latest time (end of day)"
+                },
+                {
+                    "type": "Select",
+                    "name": "OverrideLatestMode",
+                    "caption": "Latest time source",
+                    "options": [
+                        {
+                            "caption": "Fixed time",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Sunset",
+                            "value": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "OverrideLatestTime",
+                    "caption": "Latest, if fixed time (HH:MM)",
+                    "validate": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "OverrideLatestSunsetID",
+                    "caption": "Sunset variable, if source = sunset (location module)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideLockTime",
+                    "caption": "Override lock time"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideLockTimeValue",
+                    "caption": "Lock time",
+                    "suffix": "s",
+                    "minimum": 0
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideBrightness",
+                    "caption": "Override brightness thresholds"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideBrightnessOn",
+                    "caption": "Brightness threshold (on)"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideBrightnessOff",
+                    "caption": "Brightness threshold (off)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideTemp",
+                    "caption": "Override outdoor temperature thresholds"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideTempOn",
+                    "caption": "Outdoor temperature threshold (on)",
+                    "suffix": "°C",
+                    "digits": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideTempOff",
+                    "caption": "Outdoor temperature threshold (off)",
+                    "suffix": "°C",
+                    "digits": 1
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideTempAllAround",
+                    "caption": "Override all-around shading temperature"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideTempAllAroundValue",
+                    "caption": "All-around shading temperature",
+                    "suffix": "°C",
+                    "digits": 1
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "OverrideIndoor",
+                    "caption": "Override indoor temperature range"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideIndoorMin",
+                    "caption": "Indoor temperature minimum",
+                    "suffix": "°C",
+                    "digits": 1
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "OverrideIndoorMax",
+                    "caption": "Indoor temperature maximum",
+                    "suffix": "°C",
+                    "digits": 1
                 }
             ]
         },
