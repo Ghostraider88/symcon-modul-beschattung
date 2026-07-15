@@ -215,7 +215,7 @@ class BeschattungSteuerung extends IPSModuleStrict
             'roofHighSideFlip'        => $this->ReadPropertyBoolean('RoofHighSideFlip'),
             'fallbackBrightnessValue' => $this->currentFallbackBrightness(),
             'fallbackBrightnessOn'    => $this->ReadPropertyInteger('CloudSunnyThreshold'),
-            'fallbackBrightnessOff'   => $this->ReadPropertyInteger('FallbackBrightnessOff'),
+            'fallbackBrightnessOff'   => $this->effectiveFallbackBrightnessOff(),
             'fallbackBrightnessUnit'  => $this->ReadPropertyString('SensorUnitLabel'),
         ]);
     }
@@ -349,6 +349,23 @@ class BeschattungSteuerung extends IPSModuleStrict
         ];
         $data = json_encode($this->getTileData());
         return $html . '<script>var _config = ' . json_encode($config) . '; if (window.handleMessage) { handleMessage(' . $data . '); }</script>';
+    }
+
+    /**
+     * "Aus"-Schwelle des Helligkeits-Ersatzsensors. Der statische Property-
+     * Standard ist auf eine Lux-Größenordnung ausgelegt und passt nicht mehr,
+     * sobald die "Sonnig-Schwelle" (Ein-Wert) auf die Einheit eines anderen
+     * Sensors umgestellt wird (z. B. W/m²) - eine feste Zahl kann keine
+     * beliebige Einheit vorhersehen. Ist der konfigurierte Aus-Wert daher
+     * größer oder gleich dem Ein-Wert (eine für eine Hysterese unsinnige
+     * Kombination), wird stattdessen automatisch die Hälfte des Ein-Werts
+     * verwendet - passt sich so selbstständig an jede Sensor-Einheit an.
+     */
+    private function effectiveFallbackBrightnessOff(): int
+    {
+        $on = $this->ReadPropertyInteger('CloudSunnyThreshold');
+        $off = $this->ReadPropertyInteger('FallbackBrightnessOff');
+        return ($off >= $on) ? (int) round($on / 2) : $off;
     }
 
     /**
