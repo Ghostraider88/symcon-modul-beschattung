@@ -304,7 +304,8 @@
       show: function (d) { return d.brightness !== null; },
       ist: function (d) {
         var warn = d.brightnessSaturated ? ' <span title="' + L('saturatedTitle', 'Sensor evtl. gesättigt') + '">⚠️</span>' : '';
-        return num(d.brightness, 0) + ' lx' + warn;
+        var fallback = d.brightnessIsFallback ? ' <span title="' + L('fallbackSensorTitle', 'Kein eigener Sensor - zentraler Ersatzsensor') + '">🔗</span>' : '';
+        return num(d.brightness, 0) + ' ' + (d.brightnessUnit || 'lx') + fallback + warn;
       },
       soll: function (d) {
         if (d.brightnessOn === null) { return ''; }

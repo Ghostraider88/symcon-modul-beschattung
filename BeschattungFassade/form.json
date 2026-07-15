@@ -29,6 +29,11 @@
                     "caption": "Brightness sensor (lux, optional)"
                 },
                 {
+                    "type": "CheckBox",
+                    "name": "UseCentralBrightnessFallback",
+                    "caption": "No brightness sensor above: fall back to the central instance's cloud/brightness sensor"
+                },
+                {
                     "type": "SelectVariable",
                     "name": "OutdoorTempID",
                     "caption": "Outdoor temperature (optional)"

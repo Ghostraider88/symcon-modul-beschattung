@@ -10,6 +10,11 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
   anderen Systemen les-/schreibbar.
 * **Wolkenerkennung**: führt eine Helligkeits-Historie, erkennt wechselhafte
   Lichtverhältnisse (Alternativmodus) und ermittelt den Sonnenscheinanteil.
+* **Helligkeits-Ersatzsensor für Fassaden ohne eigenen Sensor**: Fassaden ohne eigenen
+  Helligkeitssensor können optional (je Fassade zuschaltbar) den hier konfigurierten
+  Wolken-/Helligkeitssensor mit eigenen Ein-/Aus-Schwellen nutzen (Sonnig-Schwelle als
+  Ein-Wert, dazu ein separater Aus-Wert), statt die Helligkeits-Bedingung ganz zu
+  ignorieren.
 * **Tagesende per Sonnenuntergang** (optional) statt fester „spätestens"-Zeit.
 * **Hausform** (Länge, Breite, Firstrichtung, Dachform Sattel/Walm/Pult): grobe, für alle
   Fassaden gemeinsame Gebäudeform, die im Kompass jeder Fassaden-Kachel maßstäblich mit

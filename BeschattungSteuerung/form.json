@@ -21,15 +21,19 @@
                 {
                     "type": "NumberSpinner",
                     "name": "CloudSunnyThreshold",
-                    "caption": "Sunny threshold (lux)",
-                    "suffix": "lx",
+                    "caption": "Sunny threshold (sensor unit, also used as the 'on' value for the facade fallback below)",
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "FallbackBrightnessOff",
+                    "caption": "Facade fallback: 'off' value (facades without their own brightness sensor use this sensor's value with this on/off pair)",
                     "minimum": 0
                 },
                 {
                     "type": "NumberSpinner",
                     "name": "CloudChangeTolerance",
-                    "caption": "Change tolerance (lux)",
-                    "suffix": "lx",
+                    "caption": "Change tolerance (sensor unit)",
                     "minimum": 0
                 },
                 {

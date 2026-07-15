@@ -45,6 +45,7 @@ class BeschattungFassade extends IPSModuleStrict
 
         // --- Sensoren (optional; leer = Bedingung wird ignoriert) ---
         $this->RegisterPropertyInteger('BrightnessID', 0);
+        $this->RegisterPropertyBoolean('UseCentralBrightnessFallback', false); // bei fehlendem eigenem Sensor auf zentralen Wolkensensor zurückfallen
         $this->RegisterPropertyInteger('OutdoorTempID', 0);
         $this->RegisterPropertyInteger('IndoorTempID', 0);
 
@@ -261,28 +262,29 @@ class BeschattungFassade extends IPSModuleStrict
         $html = (string) file_get_contents(__DIR__ . '/module.html');
         $config = [
             'labels' => [
-                'shaded'          => $this->Translate('Shaded'),
-                'open'            => $this->Translate('Open'),
-                'automation'      => $this->Translate('Automation'),
-                'target'          => $this->Translate('Target'),
-                'brightness'      => $this->Translate('Brightness'),
-                'outdoorTemp'     => $this->Translate('Outdoor temp.'),
-                'indoorTemp'      => $this->Translate('Indoor temp.'),
-                'sunOnWindow'     => $this->Translate('Sun on window'),
-                'timeWindow'      => $this->Translate('Time window'),
-                'lockTime'        => $this->Translate('Lock time'),
-                'waitingChip'     => $this->Translate('waiting'),
-                'lastMovement'    => $this->Translate('Last movement'),
-                'alternativeMode' => $this->Translate('Alternative mode'),
-                'sunPercentage'   => $this->Translate('Sun percentage'),
-                'manualActive'    => $this->Translate('Manual override active'),
-                'confirming'      => $this->Translate('Confirming change'),
-                'blockedSuffix'   => $this->Translate('{n} locked'),
-                'saturatedTitle'  => $this->Translate('Sensor possibly saturated (unchanged for a long time despite high sun elevation)'),
-                'movesToday'      => $this->Translate('moves today'),
-                'shadedToday'     => $this->Translate('shaded today'),
-                'actuatorsLabel'  => $this->Translate('Actuators'),
-                'protocolLabel'   => $this->Translate('Protocol'),
+                'shaded'              => $this->Translate('Shaded'),
+                'open'                => $this->Translate('Open'),
+                'automation'          => $this->Translate('Automation'),
+                'target'              => $this->Translate('Target'),
+                'brightness'          => $this->Translate('Brightness'),
+                'outdoorTemp'         => $this->Translate('Outdoor temp.'),
+                'indoorTemp'          => $this->Translate('Indoor temp.'),
+                'sunOnWindow'         => $this->Translate('Sun on window'),
+                'timeWindow'          => $this->Translate('Time window'),
+                'lockTime'            => $this->Translate('Lock time'),
+                'waitingChip'         => $this->Translate('waiting'),
+                'lastMovement'        => $this->Translate('Last movement'),
+                'alternativeMode'     => $this->Translate('Alternative mode'),
+                'sunPercentage'       => $this->Translate('Sun percentage'),
+                'manualActive'        => $this->Translate('Manual override active'),
+                'confirming'          => $this->Translate('Confirming change'),
+                'blockedSuffix'       => $this->Translate('{n} locked'),
+                'saturatedTitle'      => $this->Translate('Sensor possibly saturated (unchanged for a long time despite high sun elevation)'),
+                'movesToday'          => $this->Translate('moves today'),
+                'shadedToday'         => $this->Translate('shaded today'),
+                'actuatorsLabel'      => $this->Translate('Actuators'),
+                'protocolLabel'       => $this->Translate('Protocol'),
+                'fallbackSensorTitle' => $this->Translate('No own sensor - using central fallback sensor'),
             ],
         ];
         $data = json_encode($this->getTileData());
@@ -588,17 +590,35 @@ class BeschattungFassade extends IPSModuleStrict
     private function evaluateBrightness(array $central): ?bool
     {
         $id = $this->ReadPropertyInteger('BrightnessID');
-        if (!$this->variableValid($id)) {
-            return true; // kein Sensor -> Bedingung ignorieren (MHC-konform)
+        if ($this->variableValid($id)) {
+            if (!$this->variableFresh($id)) {
+                return null;
+            }
+            $lux = (float) GetValue($id);
+            $state = $this->ReadAttributeBoolean('BrightHyst');
+            $state = $this->hysteresis($state, $lux, (float) $central['brightnessOn'], (float) $central['brightnessOff']);
+            $this->WriteAttributeBoolean('BrightHyst', $state);
+            return $state;
         }
-        if (!$this->variableFresh($id)) {
-            return null;
+
+        // Kein eigener Sensor: optional (Property `UseCentralBrightnessFallback`,
+        // Standard aus) auf den zentralen Wolken-/Helligkeitssensor als Ersatzwert
+        // zurückfallen (eigene Ein-/Aus-Schwellen, da dieser meist eine andere
+        // Einheit als die Lux-basierten Beschattungsschwellen hat). Ist der
+        // Ersatzsensor selbst nicht konfiguriert/veraltet, wird das wie "kein
+        // Sensor" behandelt statt Fail-Safe auszulösen - ein gemeinsam genutzter
+        // Sensor soll nicht mehrere Fassaden in Fail-Safe versetzen.
+        if ($this->ReadPropertyBoolean('UseCentralBrightnessFallback')) {
+            $fallback = $central['fallbackBrightnessValue'] ?? null;
+            if ($fallback !== null) {
+                $state = $this->ReadAttributeBoolean('BrightHyst');
+                $state = $this->hysteresis($state, (float) $fallback, (float) $central['fallbackBrightnessOn'], (float) $central['fallbackBrightnessOff']);
+                $this->WriteAttributeBoolean('BrightHyst', $state);
+                return $state;
+            }
         }
-        $lux = (float) GetValue($id);
-        $state = $this->ReadAttributeBoolean('BrightHyst');
-        $state = $this->hysteresis($state, $lux, (float) $central['brightnessOn'], (float) $central['brightnessOff']);
-        $this->WriteAttributeBoolean('BrightHyst', $state);
-        return $state;
+
+        return true; // kein Sensor verfügbar -> Bedingung ignorieren (MHC-konform)
     }
 
     /**
@@ -1076,6 +1096,18 @@ class BeschattungFassade extends IPSModuleStrict
 
         $brightID = $this->ReadPropertyInteger('BrightnessID');
         $brightness = $this->variableValid($brightID) ? (float) GetValue($brightID) : null;
+        $brightnessOn = $central['brightnessOn'] ?? null;
+        $brightnessOff = $central['brightnessOff'] ?? null;
+        $brightnessUnit = 'lx';
+        $brightnessIsFallback = false;
+        if ($brightness === null && $central !== null && $this->ReadPropertyBoolean('UseCentralBrightnessFallback')
+            && ($central['fallbackBrightnessValue'] ?? null) !== null) {
+            $brightness = (float) $central['fallbackBrightnessValue'];
+            $brightnessOn = $central['fallbackBrightnessOn'] ?? null;
+            $brightnessOff = $central['fallbackBrightnessOff'] ?? null;
+            $brightnessUnit = (string) ($central['fallbackBrightnessUnit'] ?? 'W/m²');
+            $brightnessIsFallback = true;
+        }
 
         $outID = $this->ReadPropertyInteger('OutdoorTempID');
         $outdoorTemp = $this->variableValid($outID) ? (float) GetValue($outID) : null;
@@ -1088,49 +1120,51 @@ class BeschattungFassade extends IPSModuleStrict
         $lockRemaining = max(0, $lockTime - $elapsed);
 
         return [
-            'name'                => IPS_GetName($this->InstanceID),
-            'shaded'              => (bool) $this->GetValue('Shaded'),
-            'targetPosition'      => (int) $this->GetValue('TargetPosition'),
-            'reason'              => $this->ReadAttributeString('LastReason'),
-            'automation'          => (bool) $this->GetValue('Automation'),
-            'brightness'          => $brightness,
-            'brightnessOn'        => $central['brightnessOn'] ?? null,
-            'brightnessOff'       => $central['brightnessOff'] ?? null,
-            'brightnessOK'        => (bool) $this->GetValue('BrightnessOK'),
-            'outdoorTemp'         => $outdoorTemp,
-            'tempOn'              => $central['tempOn'] ?? null,
-            'tempOff'             => $central['tempOff'] ?? null,
-            'temperatureOK'       => (bool) $this->GetValue('TemperatureOK'),
-            'indoorTemp'          => $indoorTemp,
-            'indoorMin'           => $central['indoorMin'] ?? null,
-            'indoorMax'           => $central['indoorMax'] ?? null,
-            'azimuth'             => $azimuth,
-            'elevation'           => $elevation,
-            'facadeDirection'     => $this->ReadPropertyInteger('FacadeDirection'),
-            'shadeAngleLeft'      => $this->ReadPropertyInteger('ShadeAngleLeft'),
-            'shadeAngleRight'     => $this->ReadPropertyInteger('ShadeAngleRight'),
-            'criticalElevation'   => $this->criticalElevation(),
-            'sunInWindow'         => (bool) $this->GetValue('SunInWindow'),
-            'earliestSec'         => $central['earliestSec'] ?? null,
-            'latestSec'           => $central['latestSec'] ?? null,
-            'nowSec'              => ((int) date('H') * 3600) + ((int) date('i') * 60),
-            'lockTime'            => $lockTime,
-            'lockRemaining'       => $lockRemaining,
-            'lastMovement'        => (int) $this->GetValue('LastMovement'),
-            'central'             => $central !== null,
-            'cloudMode'           => (bool) ($central['cloudMode'] ?? false),
-            'sunPercentage'       => (float) ($central['sunPercentage'] ?? 0.0),
-            'manualMode'          => $this->ReadPropertyBoolean('ManualDetection') && (bool) $this->GetValue('ManualMode'),
-            'blockedCount'        => $this->blockedActuatorCount(),
-            'confirmed'           => $this->ReadAttributeBoolean('ConfirmedShade'),
-            'confirmMinutes'      => $this->ReadPropertyInteger('DecisionConfirmMinutes'),
-            'stableSince'         => $this->ReadAttributeInteger('DecisionStableSince'),
-            'decisionPath'        => $this->ReadAttributeString('LastDecisionPath'),
-            'actuators'           => $this->actuatorStatuses(),
-            'brightnessSaturated' => $this->ReadAttributeBoolean('BrightnessSaturated'),
-            'sunTrack'            => json_decode($this->ReadAttributeString('SunTrack'), true) ?: [],
-            'dailyMoves'          => $this->ReadAttributeInteger('DailyMoveCount'),
-            'dailyShadedSeconds'  => $this->ReadAttributeInteger('DailyShadedSeconds')
+            'name'                 => IPS_GetName($this->InstanceID),
+            'shaded'               => (bool) $this->GetValue('Shaded'),
+            'targetPosition'       => (int) $this->GetValue('TargetPosition'),
+            'reason'               => $this->ReadAttributeString('LastReason'),
+            'automation'           => (bool) $this->GetValue('Automation'),
+            'brightness'           => $brightness,
+            'brightnessOn'         => $brightnessOn,
+            'brightnessOff'        => $brightnessOff,
+            'brightnessUnit'       => $brightnessUnit,
+            'brightnessIsFallback' => $brightnessIsFallback,
+            'brightnessOK'         => (bool) $this->GetValue('BrightnessOK'),
+            'outdoorTemp'          => $outdoorTemp,
+            'tempOn'               => $central['tempOn'] ?? null,
+            'tempOff'              => $central['tempOff'] ?? null,
+            'temperatureOK'        => (bool) $this->GetValue('TemperatureOK'),
+            'indoorTemp'           => $indoorTemp,
+            'indoorMin'            => $central['indoorMin'] ?? null,
+            'indoorMax'            => $central['indoorMax'] ?? null,
+            'azimuth'              => $azimuth,
+            'elevation'            => $elevation,
+            'facadeDirection'      => $this->ReadPropertyInteger('FacadeDirection'),
+            'shadeAngleLeft'       => $this->ReadPropertyInteger('ShadeAngleLeft'),
+            'shadeAngleRight'      => $this->ReadPropertyInteger('ShadeAngleRight'),
+            'criticalElevation'    => $this->criticalElevation(),
+            'sunInWindow'          => (bool) $this->GetValue('SunInWindow'),
+            'earliestSec'          => $central['earliestSec'] ?? null,
+            'latestSec'            => $central['latestSec'] ?? null,
+            'nowSec'               => ((int) date('H') * 3600) + ((int) date('i') * 60),
+            'lockTime'             => $lockTime,
+            'lockRemaining'        => $lockRemaining,
+            'lastMovement'         => (int) $this->GetValue('LastMovement'),
+            'central'              => $central !== null,
+            'cloudMode'            => (bool) ($central['cloudMode'] ?? false),
+            'sunPercentage'        => (float) ($central['sunPercentage'] ?? 0.0),
+            'manualMode'           => $this->ReadPropertyBoolean('ManualDetection') && (bool) $this->GetValue('ManualMode'),
+            'blockedCount'         => $this->blockedActuatorCount(),
+            'confirmed'            => $this->ReadAttributeBoolean('ConfirmedShade'),
+            'confirmMinutes'       => $this->ReadPropertyInteger('DecisionConfirmMinutes'),
+            'stableSince'          => $this->ReadAttributeInteger('DecisionStableSince'),
+            'decisionPath'         => $this->ReadAttributeString('LastDecisionPath'),
+            'actuators'            => $this->actuatorStatuses(),
+            'brightnessSaturated'  => $this->ReadAttributeBoolean('BrightnessSaturated'),
+            'sunTrack'             => json_decode($this->ReadAttributeString('SunTrack'), true) ?: [],
+            'dailyMoves'           => $this->ReadAttributeInteger('DailyMoveCount'),
+            'dailyShadedSeconds'   => $this->ReadAttributeInteger('DailyShadedSeconds')
                 + ($this->ReadAttributeInteger('DailyShadeStart') > 0 ? time() - $this->ReadAttributeInteger('DailyShadeStart') : 0),
             'protocolHtml'        => $this->ReadPropertyBoolean('EnableProtocol') ? (string) $this->GetValue('Protocol') : '',
             'houseLength'         => (float) ($central['houseLength'] ?? 10.0),

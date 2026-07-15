@@ -14,6 +14,16 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   (Tropennacht), gilt sie auch am nächsten Morgen noch als erfüllt. Optional lässt sich
   diese Hysterese täglich zurücksetzen (siehe „Verhalten & Sicherheit"), damit jeder Tag
   neu bei „nicht erfüllt" beginnt.
+* **Helligkeits-Ersatzsensor** (optional, Checkbox „No brightness sensor above: fall
+  back to …", Standard aus): Ist an dieser Fassade kein eigener Helligkeitssensor
+  ausgewählt, kann sie stattdessen den zentralen Wolken-/Helligkeitssensor der
+  „Beschattung Steuerung" mit eigenen Ein-/Aus-Schwellen nutzen (da dieser meist
+  eine andere Einheit hat als ein Lux-Sensor). So bleibt die Helligkeits-Bedingung
+  wirksam, statt komplett ignoriert zu werden – ist auch der zentrale Sensor nicht
+  konfiguriert/veraltet, wird die Bedingung wie ohne Option ignoriert (kein
+  Fail-Safe wegen eines gemeinsam genutzten Sensors). Die Kachel kennzeichnet einen
+  genutzten Ersatzsensor mit 🔗. Ohne aktivierte Option verhält sich eine Fassade
+  ohne eigenen Sensor wie bisher.
 * **Rundumbeschattung** ab hoher Außentemperatur (Sonnenstand wird dann ignoriert).
 * **Innentemperatur-Logik** (min/max) nach MyHomeControl-Vorbild.
 * **Alternativmodus** bei Wolken: der über ein Zeitfenster gemittelte

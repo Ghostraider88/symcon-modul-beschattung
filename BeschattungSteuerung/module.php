@@ -42,6 +42,7 @@ class BeschattungSteuerung extends IPSModuleStrict
         // --- Wolkenerkennung (Setup-Konfiguration) ---
         $this->RegisterPropertyInteger('CloudBrightnessID', 0); // zentraler Helligkeitssensor (Lux)
         $this->RegisterPropertyInteger('CloudSunnyThreshold', 20000);
+        $this->RegisterPropertyInteger('FallbackBrightnessOff', 10000); // Aus-Schwelle, wenn Fassaden ohne eigenen Sensor diesen Sensor als Ersatz nutzen (Ein = CloudSunnyThreshold)
         $this->RegisterPropertyInteger('CloudChangeTolerance', 3000);
         $this->RegisterPropertyInteger('CloudWindowMinutes', 60);
         $this->RegisterPropertyInteger('CloudChangeLimitOn', 8);
@@ -194,24 +195,28 @@ class BeschattungSteuerung extends IPSModuleStrict
     public function GetCentralData(): string
     {
         return json_encode([
-            'earliestSec'      => $this->secondsOfDay($this->GetValue('Earliest')),
-            'latestSec'        => $this->effectiveLatestSec(),
-            'lockTime'         => (int) $this->GetValue('LockTime'),
-            'brightnessOn'     => (int) $this->GetValue('BrightnessOn'),
-            'brightnessOff'    => (int) $this->GetValue('BrightnessOff'),
-            'tempOn'           => (float) $this->GetValue('TempOn'),
-            'tempOff'          => (float) $this->GetValue('TempOff'),
-            'tempAllAround'    => (float) $this->GetValue('TempAllAround'),
-            'indoorMin'        => (float) $this->GetValue('IndoorTempMin'),
-            'indoorMax'        => (float) $this->GetValue('IndoorTempMax'),
-            'automationGlobal' => (bool) $this->GetValue('AutomationGlobal'),
-            'cloudMode'        => (bool) $this->GetValue('CloudMode'),
-            'sunPercentage'    => (float) $this->GetValue('SunPercentage'),
-            'houseLength'      => $this->ReadPropertyFloat('HouseLength'),
-            'houseWidth'       => $this->ReadPropertyFloat('HouseWidth'),
-            'houseRotation'    => $this->ReadPropertyInteger('HouseRotation'),
-            'roofShape'        => $this->ReadPropertyInteger('RoofShape'),
-            'roofHighSideFlip' => $this->ReadPropertyBoolean('RoofHighSideFlip'),
+            'earliestSec'             => $this->secondsOfDay($this->GetValue('Earliest')),
+            'latestSec'               => $this->effectiveLatestSec(),
+            'lockTime'                => (int) $this->GetValue('LockTime'),
+            'brightnessOn'            => (int) $this->GetValue('BrightnessOn'),
+            'brightnessOff'           => (int) $this->GetValue('BrightnessOff'),
+            'tempOn'                  => (float) $this->GetValue('TempOn'),
+            'tempOff'                 => (float) $this->GetValue('TempOff'),
+            'tempAllAround'           => (float) $this->GetValue('TempAllAround'),
+            'indoorMin'               => (float) $this->GetValue('IndoorTempMin'),
+            'indoorMax'               => (float) $this->GetValue('IndoorTempMax'),
+            'automationGlobal'        => (bool) $this->GetValue('AutomationGlobal'),
+            'cloudMode'               => (bool) $this->GetValue('CloudMode'),
+            'sunPercentage'           => (float) $this->GetValue('SunPercentage'),
+            'houseLength'             => $this->ReadPropertyFloat('HouseLength'),
+            'houseWidth'              => $this->ReadPropertyFloat('HouseWidth'),
+            'houseRotation'           => $this->ReadPropertyInteger('HouseRotation'),
+            'roofShape'               => $this->ReadPropertyInteger('RoofShape'),
+            'roofHighSideFlip'        => $this->ReadPropertyBoolean('RoofHighSideFlip'),
+            'fallbackBrightnessValue' => $this->currentFallbackBrightness(),
+            'fallbackBrightnessOn'    => $this->ReadPropertyInteger('CloudSunnyThreshold'),
+            'fallbackBrightnessOff'   => $this->ReadPropertyInteger('FallbackBrightnessOff'),
+            'fallbackBrightnessUnit'  => $this->ReadPropertyString('SensorUnitLabel'),
         ]);
     }
 
@@ -344,6 +349,22 @@ class BeschattungSteuerung extends IPSModuleStrict
         ];
         $data = json_encode($this->getTileData());
         return $html . '<script>var _config = ' . json_encode($config) . '; if (window.handleMessage) { handleMessage(' . $data . '); }</script>';
+    }
+
+    /**
+     * Aktueller Wert des zentralen Wolken-/Helligkeitssensors, sofern
+     * konfiguriert und nicht veraltet - dient Fassaden ohne eigenen
+     * Helligkeitssensor als Ersatzwert. Bei Ausfall/fehlender Konfiguration
+     * null, wird von den Fassaden dann wie "kein Sensor" behandelt (keine
+     * Fail-Safe-Kopplung an diesen gemeinsam genutzten Sensor).
+     */
+    private function currentFallbackBrightness(): ?float
+    {
+        $id = $this->ReadPropertyInteger('CloudBrightnessID');
+        if (!$this->variableValid($id) || !$this->variableFresh($id)) {
+            return null;
+        }
+        return (float) GetValue($id);
     }
 
     // ------------------------------------------------------------------
