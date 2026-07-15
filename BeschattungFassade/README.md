@@ -24,7 +24,13 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   Fail-Safe wegen eines gemeinsam genutzten Sensors). Die Kachel kennzeichnet einen
   genutzten Ersatzsensor mit 🔗. Ohne aktivierte Option verhält sich eine Fassade
   ohne eigenen Sensor wie bisher.
-* **Rundumbeschattung** ab hoher Außentemperatur (Sonnenstand wird dann ignoriert).
+* **Rundumbeschattung** ab hoher Außentemperatur (Sonnenstand wird dann ignoriert). Optional
+  (Checkbox in „Overrides", Standard aus) wird sie NICHT erzwungen, wenn der zentrale
+  Wolken-/Helligkeitssensor gerade unter dessen Sonnig-Schwelle liegt – z. B. an einem
+  bedeckten Abend, an dem die Lufttemperatur zwar noch hoch ist, aber keine nennenswerte
+  Sonne mehr scheint und geschlossen halten daher keinen zusätzlichen Hitzeschutz mehr
+  bringt. Die Entscheidung fällt dann normal über Helligkeit/Temperatur/Sonnenstand; ohne
+  verfügbaren zentralen Sensor bleibt die Rundumbeschattung sicherheitshalber aktiv.
 * **Innentemperatur-Logik** (min/max) nach MyHomeControl-Vorbild.
 * **Alternativmodus** bei Wolken: der über ein Zeitfenster gemittelte
   Sonnenscheinanteil (> 50 %) ersetzt bei aktivem Alternativmodus vollständig die
@@ -95,7 +101,7 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 | Ausrichtung | Fassadenrichtung, Beschattungswinkel links/rechts |
 | Geometrie | Dachhöhe, Dachvorsprung, Fensterbretthöhe, Endwinkel |
 | Aktoren & Positionen | Aktorliste (je Aktor Variable, Anzeigename, individuelle Position, Sperrvariable), Beschattungs-/Offen-Position (Default 70 % / 0 %) |
-| Überschreibungen | Je Fassade optional: Frühestens/Spätestens (fest oder Sonnenuntergang), Sperrzeit, Helligkeits-/Außentemperatur-Schwellen, Rundumbeschattungs-Temperatur, Innentemperatur-Bereich |
+| Überschreibungen | Je Fassade optional: Frühestens/Spätestens (fest oder Sonnenuntergang), Sperrzeit, Helligkeits-/Außentemperatur-Schwellen, Rundumbeschattungs-Temperatur, Innentemperatur-Bereich, Rundumbeschattung bei geringer Helligkeit nicht erzwingen |
 | Verhalten & Sicherheit | Tagesende, Fail-Safe, Intervall, Sensoralter, mittlere Außentemp., Handbetrieb, Entscheidungs-Bestätigungszeit, Anzeige |
 
 ## Statusvariablen

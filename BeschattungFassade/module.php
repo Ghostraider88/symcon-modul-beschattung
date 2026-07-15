@@ -85,6 +85,7 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterPropertyBoolean('OverrideIndoor', false);
         $this->RegisterPropertyFloat('OverrideIndoorMin', 22.0);
         $this->RegisterPropertyFloat('OverrideIndoorMax', 26.0);
+        $this->RegisterPropertyBoolean('AllAroundBrightnessOverride', false); // Rundumbeschattung nicht erzwingen, wenn laut zentralem Sensor gerade keine nennenswerte Sonne scheint
 
         // --- Verhalten ---
         $this->RegisterPropertyInteger('EveningBehavior', self::EVENING_OPEN);
@@ -393,10 +394,12 @@ class BeschattungFassade extends IPSModuleStrict
         [$temperatureOK, $allAround] = $temp;
 
         // --- Entscheidung (MHC-konform) ---
+        $allAroundCancelled = $allAround && $this->allAroundOverriddenByLowBrightness($central);
+
         $shade = false;
         $reason = '';
         $decisionPath = 'normal';
-        if ($allAround) {
+        if ($allAround && !$allAroundCancelled) {
             $shade = true;
             $reason = '🔥 Rundumbeschattung (Außentemp.)';
             $decisionPath = 'allAround';
@@ -414,6 +417,8 @@ class BeschattungFassade extends IPSModuleStrict
         } elseif ($brightnessOK && $temperatureOK) {
             $shade = $sunInWindow;
             $reason = '☀️ Sonnenstand';
+        } elseif ($allAroundCancelled) {
+            $reason = '🔥☁️ Rundumbeschattung durch geringe Helligkeit übersteuert';
         } else {
             $reason = '⚠️ Schwellwerte nicht erfüllt';
         }
@@ -697,6 +702,31 @@ class BeschattungFassade extends IPSModuleStrict
         $state = $this->hysteresis($state, $outTemp, $central['tempOn'], $central['tempOff']);
         $this->WriteAttributeBoolean('TempHyst', $state);
         return [$state, $allAround];
+    }
+
+    /**
+     * Rundumbeschattung ist als reiner Hitzeschutz gedacht: schließen, sobald
+     * es draußen zu heiß wird, unabhängig vom Sonnenstand. Scheint laut dem
+     * zentralen Wolken-/Helligkeitssensor aber gerade gar keine nennenswerte
+     * Sonne (z. B. abends bei bedecktem Himmel trotz noch hoher Lufttemperatur),
+     * bringt geschlossen halten keinen zusätzlichen Hitzeschutz mehr, verdunkelt
+     * drinnen aber unnötig. Optional (Property `AllAroundBrightnessOverride`,
+     * Standard aus) wird die Rundumbeschattung in diesem Fall nicht erzwungen;
+     * die Entscheidung fällt dann normal über Helligkeit/Temperatur/Sonnenstand.
+     * Ohne verfügbaren zentralen Sensor bleibt die Rundumbeschattung
+     * sicherheitshalber aktiv (kein Override ohne Datenbasis).
+     */
+    private function allAroundOverriddenByLowBrightness(array $central): bool
+    {
+        if (!$this->ReadPropertyBoolean('AllAroundBrightnessOverride')) {
+            return false;
+        }
+        $value = $central['fallbackBrightnessValue'] ?? null;
+        $threshold = $central['fallbackBrightnessOn'] ?? null;
+        if ($value === null || $threshold === null) {
+            return false;
+        }
+        return (float) $value < (float) $threshold;
     }
 
     /** Gemittelte Außentemperatur (Tagesmaxima der letzten N Tage), sonst aktueller Wert. */

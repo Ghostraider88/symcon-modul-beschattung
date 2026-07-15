@@ -49,6 +49,7 @@
             "Override indoor temperature range": "Innentemperatur-Bereich überschreiben",
             "Indoor temperature minimum": "Innentemperatur Minimum",
             "Indoor temperature maximum": "Innentemperatur Maximum",
+            "Don't force all-around shading when the central instance's cloud/brightness sensor is below its sunny threshold (e.g. overcast evening despite high temperature)": "Rundumbeschattung nicht erzwingen, wenn der Wolken-/Helligkeitssensor der zentralen Instanz unter deren Sonnig-Schwelle liegt (z. B. bedeckter Abend trotz hoher Temperatur)",
             "Behaviour & safety": "Verhalten & Sicherheit",
             "At end of day": "Am Tagesende",
             "Open blinds": "Behänge öffnen",
