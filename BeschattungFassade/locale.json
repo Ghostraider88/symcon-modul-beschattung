@@ -58,6 +58,7 @@
             "Evaluation interval (seconds)": "Auswertungsintervall (Sekunden)",
             "Maximum sensor age before stale (seconds, 0 = off)": "Maximales Sensoralter bevor veraltet (Sekunden, 0 = aus)",
             "Mean outdoor temperature over N days (0 = current value only)": "Mittlere Außentemperatur über N Tage (0 = nur aktueller Wert)",
+            "Reset outdoor temperature hysteresis daily (ignore yesterday's peak each morning)": "Außentemperatur-Hysterese täglich zurücksetzen (Vortags-Höchstwert morgens ignorieren)",
             "Detect manual operation and pause automation": "Handbetrieb erkennen und Automatik pausieren",
             "Manual detection tolerance": "Toleranz Handbetrieb-Erkennung",
             "Pause after manual operation (seconds)": "Pause nach Handbetrieb (Sekunden)",

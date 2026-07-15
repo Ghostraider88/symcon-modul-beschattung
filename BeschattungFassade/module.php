@@ -88,6 +88,7 @@ class BeschattungFassade extends IPSModuleStrict
         // --- Verhalten ---
         $this->RegisterPropertyInteger('EveningBehavior', self::EVENING_OPEN);
         $this->RegisterPropertyInteger('EvaluationInterval', 300); // s
+        $this->RegisterPropertyBoolean('TempHystDailyReset', false);
         $this->RegisterPropertyInteger('MeanTempDays', 0);
 
         // --- Handbetrieb-Erkennung ---
@@ -114,6 +115,7 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterAttributeInteger('LastMovementTs', 0);
         $this->RegisterAttributeBoolean('BrightHyst', false);
         $this->RegisterAttributeBoolean('TempHyst', false);
+        $this->RegisterAttributeString('TempHystResetDate', ''); // Tag des letzten täglichen Hysterese-Resets
         $this->RegisterAttributeInteger('ManualUntil', 0);
         $this->RegisterAttributeInteger('LastCommandedPos', -1);
         $this->RegisterAttributeString('TempMaxHistory', '{}');
@@ -600,10 +602,35 @@ class BeschattungFassade extends IPSModuleStrict
     }
 
     /**
+     * Setzt die Außentemperatur-Hysterese optional einmal täglich zurück
+     * (Property `TempHystDailyReset`, Standard aus). Ohne diesen Reset bleibt
+     * die Temperaturbedingung ab dem Überschreiten der Ein-Schwelle so lange
+     * "erfüllt", bis der Wert unter die Aus-Schwelle fällt – fällt die
+     * Außentemperatur nachts nie so weit (Tropennacht), gilt sie am nächsten
+     * Morgen weiterhin als erfüllt, obwohl der aktuelle Wert in der Totzone
+     * zwischen Aus- und Ein-Schwelle liegt. Ist der Reset aktiv, startet jeder
+     * Tag neu bei "nicht erfüllt", unabhängig vom Vortag.
+     */
+    private function maybeResetTempHysteresis(): void
+    {
+        if (!$this->ReadPropertyBoolean('TempHystDailyReset')) {
+            return;
+        }
+        $today = date('Y-m-d');
+        if ($this->ReadAttributeString('TempHystResetDate') === $today) {
+            return;
+        }
+        $this->WriteAttributeString('TempHystResetDate', $today);
+        $this->WriteAttributeBoolean('TempHyst', false);
+    }
+
+    /**
      * @return array{0:bool,1:bool}|null [temperaturBedingung, rundumbeschattung]; null = Sensor veraltet.
      */
     private function evaluateTemperature(array $central): ?array
     {
+        $this->maybeResetTempHysteresis();
+
         $outID = $this->ReadPropertyInteger('OutdoorTempID');
         $inID = $this->ReadPropertyInteger('IndoorTempID');
 

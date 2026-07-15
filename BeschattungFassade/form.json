@@ -364,6 +364,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "TempHystDailyReset",
+                    "caption": "Reset outdoor temperature hysteresis daily (ignore yesterday's peak each morning)"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "ManualDetection",
                     "caption": "Detect manual operation and pause automation"
                 },

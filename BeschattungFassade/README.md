@@ -8,7 +8,12 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
 
 * Sonnenstandsbasierte Beschattung anhand **Azimut/Elevation** (Standortmodul) und der
   Hausgeometrie (Dachvorsprung, Endwinkel, Fensterausrichtung).
-* Helligkeits- und Temperaturbedingungen mit **Hysterese**.
+* Helligkeits- und Temperaturbedingungen mit **Hysterese**. Ohne weitere Option bleibt
+  die Außentemperatur-Bedingung ab Überschreiten der Ein-Schwelle so lange erfüllt, bis
+  der Wert unter die Aus-Schwelle fällt – fällt die Temperatur nachts nie so weit
+  (Tropennacht), gilt sie auch am nächsten Morgen noch als erfüllt. Optional lässt sich
+  diese Hysterese täglich zurücksetzen (siehe „Verhalten & Sicherheit"), damit jeder Tag
+  neu bei „nicht erfüllt" beginnt.
 * **Rundumbeschattung** ab hoher Außentemperatur (Sonnenstand wird dann ignoriert).
 * **Innentemperatur-Logik** (min/max) nach MyHomeControl-Vorbild.
 * **Alternativmodus** bei Wolken: der über ein Zeitfenster gemittelte
