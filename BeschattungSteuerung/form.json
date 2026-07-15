@@ -27,7 +27,7 @@
                 {
                     "type": "NumberSpinner",
                     "name": "FallbackBrightnessOff",
-                    "caption": "Facade fallback: 'off' value (facades without their own brightness sensor use this sensor's value with this on/off pair)",
+                    "caption": "Facade fallback: 'off' value (0 = automatic, half of the sunny threshold above)",
                     "minimum": 0
                 },
                 {

@@ -6,7 +6,7 @@
             "Central brightness sensor (lux)": "Zentraler Helligkeitssensor (Lux)",
             "Sensor unit (display only, e.g. lx or W/m²)": "Sensor-Einheit (nur Anzeige, z. B. lx oder W/m²)",
             "Sunny threshold (sensor unit, also used as the 'on' value for the facade fallback below)": "Sonnig-Schwelle (Sensor-Einheit, dient auch als Ein-Wert für den Fassaden-Ersatzsensor unten)",
-            "Facade fallback: 'off' value (facades without their own brightness sensor use this sensor's value with this on/off pair)": "Fassaden-Ersatzsensor: Aus-Wert (Fassaden ohne eigenen Helligkeitssensor nutzen den Wert dieses Sensors mit diesem Ein-/Aus-Paar)",
+            "Facade fallback: 'off' value (0 = automatic, half of the sunny threshold above)": "Fassaden-Ersatzsensor: Aus-Wert (0 = automatisch, halber Wert der Sonnig-Schwelle oben)",
             "Change tolerance (sensor unit)": "Wechseltoleranz (Sensor-Einheit)",
             "Observation window (minutes)": "Beobachtungszeitraum (Minuten)",
             "Activate after N changes": "Aktivieren ab N Wechseln",

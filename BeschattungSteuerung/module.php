@@ -42,7 +42,7 @@ class BeschattungSteuerung extends IPSModuleStrict
         // --- Wolkenerkennung (Setup-Konfiguration) ---
         $this->RegisterPropertyInteger('CloudBrightnessID', 0); // zentraler Helligkeitssensor (Lux)
         $this->RegisterPropertyInteger('CloudSunnyThreshold', 20000);
-        $this->RegisterPropertyInteger('FallbackBrightnessOff', 10000); // Aus-Schwelle, wenn Fassaden ohne eigenen Sensor diesen Sensor als Ersatz nutzen (Ein = CloudSunnyThreshold)
+        $this->RegisterPropertyInteger('FallbackBrightnessOff', 0); // Aus-Schwelle für den Fassaden-Ersatzsensor (Ein = CloudSunnyThreshold); 0 = automatisch (halber Ein-Wert)
         $this->RegisterPropertyInteger('CloudChangeTolerance', 3000);
         $this->RegisterPropertyInteger('CloudWindowMinutes', 60);
         $this->RegisterPropertyInteger('CloudChangeLimitOn', 8);
@@ -352,20 +352,19 @@ class BeschattungSteuerung extends IPSModuleStrict
     }
 
     /**
-     * "Aus"-Schwelle des Helligkeits-Ersatzsensors. Der statische Property-
-     * Standard ist auf eine Lux-Größenordnung ausgelegt und passt nicht mehr,
-     * sobald die "Sonnig-Schwelle" (Ein-Wert) auf die Einheit eines anderen
-     * Sensors umgestellt wird (z. B. W/m²) - eine feste Zahl kann keine
-     * beliebige Einheit vorhersehen. Ist der konfigurierte Aus-Wert daher
-     * größer oder gleich dem Ein-Wert (eine für eine Hysterese unsinnige
-     * Kombination), wird stattdessen automatisch die Hälfte des Ein-Werts
-     * verwendet - passt sich so selbstständig an jede Sensor-Einheit an.
+     * "Aus"-Schwelle des Helligkeits-Ersatzsensors. 0 (Standard) bedeutet
+     * "automatisch": die Hälfte der "Sonnig-Schwelle" (Ein-Wert). Eine feste
+     * Zahl könnte keine beliebige Sensor-Einheit vorhersehen (z. B. Lux vs.
+     * W/m²) - die "Sensor-Einheit" ist rein kosmetisch und nicht in Zahlen
+     * umrechenbar. Ist ein eigener Wert eingetragen, aber unsinnig (≥ dem
+     * Ein-Wert, also keine gültige Hysterese), wird ebenfalls automatisch
+     * gerechnet, statt eine kaputte Kombination zu verwenden.
      */
     private function effectiveFallbackBrightnessOff(): int
     {
         $on = $this->ReadPropertyInteger('CloudSunnyThreshold');
         $off = $this->ReadPropertyInteger('FallbackBrightnessOff');
-        return ($off >= $on) ? (int) round($on / 2) : $off;
+        return ($off <= 0 || $off >= $on) ? (int) round($on / 2) : $off;
     }
 
     /**
