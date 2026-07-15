@@ -1156,7 +1156,7 @@ class BeschattungFassade extends IPSModuleStrict
             'sunPercentage'        => (float) ($central['sunPercentage'] ?? 0.0),
             'manualMode'           => $this->ReadPropertyBoolean('ManualDetection') && (bool) $this->GetValue('ManualMode'),
             'blockedCount'         => $this->blockedActuatorCount(),
-            'confirmed'            => $this->ReadAttributeBoolean('ConfirmedShade'),
+            'rawDecision'          => $this->ReadAttributeBoolean('LastRawDecision'),
             'confirmMinutes'       => $this->ReadPropertyInteger('DecisionConfirmMinutes'),
             'stableSince'          => $this->ReadAttributeInteger('DecisionStableSince'),
             'decisionPath'         => $this->ReadAttributeString('LastDecisionPath'),

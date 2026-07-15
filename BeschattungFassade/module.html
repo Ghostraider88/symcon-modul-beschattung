@@ -460,11 +460,12 @@
     if (d.blockedCount > 0) {
       parts.push('🔒 ' + L('blockedSuffix', '{n} gesperrt').replace('{n}', d.blockedCount));
     }
-    if (d.confirmed !== d.shaded && d.confirmMinutes > 0 && d.stableSince > 0) {
+    if (d.rawDecision !== d.shaded && d.confirmMinutes > 0 && d.stableSince > 0) {
       var stableFor = (Date.now() / 1000) - d.stableSince;
       var needed = d.confirmMinutes * 60;
       if (stableFor < needed) {
-        parts.push('🕒 ' + L('confirming', 'Wechsel in Bestätigung') + ' (' + duration(stableFor) + '/' + duration(needed) + ')');
+        var target = d.rawDecision ? L('shaded', 'beschattet') : L('open', 'offen');
+        parts.push('🕒 ' + L('confirming', 'Wechsel in Bestätigung') + ' → ' + target + ' (' + duration(stableFor) + '/' + duration(needed) + ')');
       }
     }
     if (d.dailyMoves) {
