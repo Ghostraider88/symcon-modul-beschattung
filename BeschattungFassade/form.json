@@ -311,11 +311,6 @@
                     "caption": "Indoor temperature maximum",
                     "suffix": "°C",
                     "digits": 1
-                },
-                {
-                    "type": "CheckBox",
-                    "name": "AllAroundBrightnessOverride",
-                    "caption": "Don't force all-around shading when the central instance's cloud/brightness sensor is below its sunny threshold (e.g. overcast evening despite high temperature)"
                 }
             ]
         },

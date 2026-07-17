@@ -86,7 +86,6 @@ class BeschattungFassade extends IPSModuleStrict
         $this->RegisterPropertyBoolean('OverrideIndoor', false);
         $this->RegisterPropertyFloat('OverrideIndoorMin', 22.0);
         $this->RegisterPropertyFloat('OverrideIndoorMax', 26.0);
-        $this->RegisterPropertyBoolean('AllAroundBrightnessOverride', false); // Rundumbeschattung nicht erzwingen, wenn laut zentralem Sensor gerade keine nennenswerte Sonne scheint
 
         // --- Verhalten ---
         $this->RegisterPropertyInteger('EveningBehavior', self::EVENING_OPEN);
@@ -394,42 +393,48 @@ class BeschattungFassade extends IPSModuleStrict
         }
         [$temperatureOK, $allAround] = $temp;
 
-        // --- Entscheidung (MHC-konform) ---
-        $allAroundCancelled = $allAround && $this->allAroundOverriddenByLowBrightness($central);
+        // --- Entscheidung (MyHomeControl-konform) ---
+        // Rundumbeschattung hebt laut Vorbild NUR die Sonnenstand-/Richtungsprüfung
+        // auf ("es wird auch beschattet, wenn die Sonne nicht direkt ins Fenster
+        // scheint") - die Helligkeitsbedingung bleibt davon unberührt und weiterhin
+        // Pflicht. Sonst würde abends bei bedecktem Himmel trotz noch hoher
+        // Lufttemperatur unnötig geschlossen, obwohl kein nennenswerter
+        // Hitzeeintrag mehr stattfindet. Im Alternativmodus übernimmt dafür der
+        // über ein Zeitfenster gemittelte Sonnenscheinanteil die Rolle der
+        // Helligkeitsbedingung (optional zusätzlich per eigenem Sensor, siehe
+        // `cloudModeOwnSensorOverrideActive()`) - einheitlich für Rundumbeschattung
+        // UND die normale Sonnenstand-Entscheidung.
+        $cloudModeActive = (bool) $central['cloudMode'];
+        $ownSensorBright = $cloudModeActive && $this->cloudModeOwnSensorOverrideActive() && $brightnessOK;
+        $sunEnough = $central['sunPercentage'] > 50;
+        $brightEnough = $cloudModeActive ? ($sunEnough || $ownSensorBright) : $brightnessOK;
 
         $shade = false;
         $reason = '';
-        $decisionPath = 'normal';
-        if ($allAround && !$allAroundCancelled) {
-            $shade = true;
-            $reason = '🔥 Rundumbeschattung (Außentemp.)';
+        if ($allAround) {
             $decisionPath = 'allAround';
-        } elseif ($central['cloudMode']) {
-            // Alternativmodus: die instantane, durch Wolken flackernde Helligkeits-
-            // Hysterese ist hier grundsätzlich KEIN Gate mehr. Stattdessen ersetzt der
-            // über ein Zeitfenster gemittelte Sonnenscheinanteil den Helligkeits-Aspekt.
-            // Optional (Property `CloudModeOwnSensorOverride`, nur mit echtem eigenem
-            // Sensor wirksam) darf zusätzlich beschattet werden, wenn DIESE Fassade
-            // gerade eindeutig hell ist - auch wenn der zentrale Sonnenanteil (noch)
-            // unter 50 % liegt, z. B. weil der zentrale Sensor anders ausgerichtet ist
-            // oder der Rollierende Durchschnitt einer plötzlichen Aufhellung hinterherhinkt.
+            if ($brightEnough) {
+                $shade = true;
+                $reason = '🔥 Rundumbeschattung (Außentemp.)';
+            } else {
+                $reason = '🔥☁️ Rundumbeschattung wegen geringer Helligkeit ausgesetzt';
+            }
+        } elseif ($cloudModeActive) {
             $decisionPath = 'cloudMode';
             if ($temperatureOK) {
-                $ownSensorBright = $this->cloudModeOwnSensorOverrideActive() && $brightnessOK;
-                $sunEnough = $central['sunPercentage'] > 50;
-                $shade = $sunInWindow && ($sunEnough || $ownSensorBright);
+                $shade = $sunInWindow && $brightEnough;
                 $reason = ($ownSensorBright && !$sunEnough)
                     ? sprintf('Φ Alternativmodus (Sonne %.0f%%, eigener Sensor hell)', $central['sunPercentage'])
                     : sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
             } else {
                 $reason = '⚠️ Schwellwerte nicht erfüllt';
             }
-        } elseif ($brightnessOK && $temperatureOK) {
+        } elseif ($brightEnough && $temperatureOK) {
+            $decisionPath = 'normal';
             $shade = $sunInWindow;
             $reason = '☀️ Sonnenstand';
-        } elseif ($allAroundCancelled) {
-            $reason = '🔥☁️ Rundumbeschattung durch geringe Helligkeit übersteuert';
         } else {
+            $decisionPath = 'normal';
             $reason = '⚠️ Schwellwerte nicht erfüllt';
         }
 
@@ -712,31 +717,6 @@ class BeschattungFassade extends IPSModuleStrict
         $state = $this->hysteresis($state, $outTemp, $central['tempOn'], $central['tempOff']);
         $this->WriteAttributeBoolean('TempHyst', $state);
         return [$state, $allAround];
-    }
-
-    /**
-     * Rundumbeschattung ist als reiner Hitzeschutz gedacht: schließen, sobald
-     * es draußen zu heiß wird, unabhängig vom Sonnenstand. Scheint laut dem
-     * zentralen Wolken-/Helligkeitssensor aber gerade gar keine nennenswerte
-     * Sonne (z. B. abends bei bedecktem Himmel trotz noch hoher Lufttemperatur),
-     * bringt geschlossen halten keinen zusätzlichen Hitzeschutz mehr, verdunkelt
-     * drinnen aber unnötig. Optional (Property `AllAroundBrightnessOverride`,
-     * Standard aus) wird die Rundumbeschattung in diesem Fall nicht erzwungen;
-     * die Entscheidung fällt dann normal über Helligkeit/Temperatur/Sonnenstand.
-     * Ohne verfügbaren zentralen Sensor bleibt die Rundumbeschattung
-     * sicherheitshalber aktiv (kein Override ohne Datenbasis).
-     */
-    private function allAroundOverriddenByLowBrightness(array $central): bool
-    {
-        if (!$this->ReadPropertyBoolean('AllAroundBrightnessOverride')) {
-            return false;
-        }
-        $value = $central['fallbackBrightnessValue'] ?? null;
-        $threshold = $central['fallbackBrightnessOn'] ?? null;
-        if ($value === null || $threshold === null) {
-            return false;
-        }
-        return (float) $value < (float) $threshold;
     }
 
     /**
