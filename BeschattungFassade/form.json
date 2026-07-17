@@ -36,7 +36,7 @@
                 {
                     "type": "CheckBox",
                     "name": "CloudModeOwnSensorOverride",
-                    "caption": "During alternative/cloud mode, also shade when THIS facade's own brightness sensor is clearly bright (in addition to the central sunshine percentage; requires the brightness sensor above)"
+                    "caption": "During alternative/cloud mode, trust THIS facade's own brightness sensor instead of the central sunshine percentage (requires the brightness sensor above)"
                 },
                 {
                     "type": "SelectVariable",

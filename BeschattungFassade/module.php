@@ -401,13 +401,17 @@ class BeschattungFassade extends IPSModuleStrict
         // Lufttemperatur unnötig geschlossen, obwohl kein nennenswerter
         // Hitzeeintrag mehr stattfindet. Im Alternativmodus übernimmt dafür der
         // über ein Zeitfenster gemittelte Sonnenscheinanteil die Rolle der
-        // Helligkeitsbedingung (optional zusätzlich per eigenem Sensor, siehe
-        // `cloudModeOwnSensorOverrideActive()`) - einheitlich für Rundumbeschattung
-        // UND die normale Sonnenstand-Entscheidung.
+        // Helligkeitsbedingung - AUSSER `cloudModeOwnSensorOverrideActive()` ist
+        // aktiv: dann zählt durchgehend der eigene Sensor dieser Fassade (in
+        // beide Richtungen: heller ODER dunkler als der gemittelte Wert), da ein
+        // echter lokaler Sensor unmittelbarer reagiert als ein bis zu einer
+        // Stunde zurückblickender Durchschnitt - z. B. bei aufziehendem Gewitter
+        // sackt die Momentan-Helligkeit sofort ab, während der Sonnenanteil noch
+        // lange von der vorherigen sonnigen Stunde dominiert wird.
         $cloudModeActive = (bool) $central['cloudMode'];
-        $ownSensorBright = $cloudModeActive && $this->cloudModeOwnSensorOverrideActive() && $brightnessOK;
+        $useOwnSensor = $cloudModeActive && $this->cloudModeOwnSensorOverrideActive();
         $sunEnough = $central['sunPercentage'] > 50;
-        $brightEnough = $cloudModeActive ? ($sunEnough || $ownSensorBright) : $brightnessOK;
+        $brightEnough = $cloudModeActive ? ($useOwnSensor ? $brightnessOK : $sunEnough) : $brightnessOK;
 
         $shade = false;
         $reason = '';
@@ -423,8 +427,8 @@ class BeschattungFassade extends IPSModuleStrict
             $decisionPath = 'cloudMode';
             if ($temperatureOK) {
                 $shade = $sunInWindow && $brightEnough;
-                $reason = ($ownSensorBright && !$sunEnough)
-                    ? sprintf('Φ Alternativmodus (Sonne %.0f%%, eigener Sensor hell)', $central['sunPercentage'])
+                $reason = $useOwnSensor
+                    ? sprintf('Φ Alternativmodus (eigener Sensor, Sonne %.0f%%)', $central['sunPercentage'])
                     : sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
             } else {
                 $reason = '⚠️ Schwellwerte nicht erfüllt';

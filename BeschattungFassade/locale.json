@@ -8,7 +8,7 @@
             "Elevation (location module)": "Elevation (Standortmodul)",
             "Brightness sensor (lux, optional)": "Helligkeitssensor (Lux, optional)",
             "No brightness sensor above: fall back to the central instance's cloud/brightness sensor": "Kein Helligkeitssensor oben: auf den Wolken-/Helligkeitssensor der zentralen Instanz zurückfallen",
-            "During alternative/cloud mode, also shade when THIS facade's own brightness sensor is clearly bright (in addition to the central sunshine percentage; requires the brightness sensor above)": "Im Alternativmodus zusätzlich beschatten, wenn der EIGENE Helligkeitssensor dieser Fassade eindeutig hell ist (zusätzlich zum zentralen Sonnenanteil; benötigt den Helligkeitssensor oben)",
+            "During alternative/cloud mode, trust THIS facade's own brightness sensor instead of the central sunshine percentage (requires the brightness sensor above)": "Im Alternativmodus dem EIGENEN Helligkeitssensor dieser Fassade vertrauen statt dem zentralen Sonnenanteil (benötigt den Helligkeitssensor oben)",
             "Outdoor temperature (optional)": "Außentemperatur (optional)",
             "Indoor temperature (optional)": "Innentemperatur (optional)",
             "Orientation": "Ausrichtung",

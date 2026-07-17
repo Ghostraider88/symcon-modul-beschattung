@@ -33,12 +33,13 @@ pro Fassade einmal angelegt; im Konfigurationsformular wird oben die zentrale
   Sonnenscheinanteil (> 50 %) ersetzt bei aktivem Alternativmodus vollständig die
   (durch Wolken kurzfristig flackernde) Momentan-Helligkeit als Bedingung;
   Sonnenstand bleibt weiterhin Voraussetzung. Optional (Checkbox „During
-  alternative/cloud mode, also shade when THIS facade's own brightness sensor is
-  clearly bright…", Standard aus, benötigt einen echten eigenen Helligkeitssensor)
-  darf zusätzlich beschattet werden, wenn DIESE Fassade gerade eindeutig hell ist –
-  auch wenn der zentrale Sonnenanteil (noch) unter 50 % liegt, z. B. weil der
-  zentrale Sensor anders ausgerichtet ist oder der gleitende Durchschnitt einer
-  plötzlichen Aufhellung hinterherhinkt.
+  alternative/cloud mode, trust THIS facade's own brightness sensor…", Standard aus,
+  benötigt einen echten eigenen Helligkeitssensor) zählt statt des zentralen
+  Sonnenanteils durchgehend der eigene Sensor dieser Fassade – in beide Richtungen:
+  heller **und** dunkler als der gemittelte Wert. Ein echter lokaler Sensor reagiert
+  unmittelbarer als ein bis zu einer Stunde zurückblickender Durchschnitt, z. B. bei
+  aufziehendem Gewitter, wenn die Momentan-Helligkeit sofort absackt, während der
+  Sonnenanteil noch lange von der vorherigen sonnigen Stunde dominiert wird.
 * **Sperrzeit** gegen häufiges Fahren; **Handbetrieb-Erkennung** mit Pause.
 * **Entscheidungs-Bestätigungszeit** (`DecisionConfirmMinutes`, Default 10 min): Ein
   Wechsel der Entscheidung (beschatten ↔ öffnen) wird erst tatsächlich gefahren,
