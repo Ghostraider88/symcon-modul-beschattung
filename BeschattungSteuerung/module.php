@@ -253,15 +253,28 @@ class BeschattungSteuerung extends IPSModuleStrict
         $sunnyThreshold = $this->ReadPropertyInteger('CloudSunnyThreshold');
         $tolerance = $this->ReadPropertyInteger('CloudChangeTolerance');
 
+        // Zählt nur echte RICHTUNGSWECHSEL (hell->dunkel->hell, typisch für
+        // durchziehende Wolken), keine gleichmäßig ansteigenden/fallenden
+        // Rampen (z. B. Sonnenauf-/-untergang) - eine lange Rampe besteht aus
+        // vielen großen Schritten in derselben Richtung und wäre mit reiner
+        // Schrittweiten-Zählung fälschlich als "wechselhaft" erkannt worden.
         $changes = 0;
         $sunny = 0;
         $last = null;
+        $lastDirection = 0;
         foreach ($history as $entry) {
             if ($entry['v'] > $sunnyThreshold) {
                 $sunny++;
             }
-            if ($last !== null && abs($entry['v'] - $last) > $tolerance) {
-                $changes++;
+            if ($last !== null) {
+                $diff = $entry['v'] - $last;
+                if (abs($diff) > $tolerance) {
+                    $direction = $diff > 0 ? 1 : -1;
+                    if ($lastDirection !== 0 && $direction !== $lastDirection) {
+                        $changes++;
+                    }
+                    $lastDirection = $direction;
+                }
             }
             $last = $entry['v'];
         }

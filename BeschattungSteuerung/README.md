@@ -9,7 +9,11 @@ Zentrale Instanz der Beschattungs-Bibliothek. Sie wird **einmal** angelegt; beli
   beschreibbare Statusvariablen – zur Laufzeit in der Visualisierung änderbar und von
   anderen Systemen les-/schreibbar.
 * **Wolkenerkennung**: führt eine Helligkeits-Historie, erkennt wechselhafte
-  Lichtverhältnisse (Alternativmodus) und ermittelt den Sonnenscheinanteil.
+  Lichtverhältnisse (Alternativmodus) und ermittelt den Sonnenscheinanteil. Gezählt
+  werden dabei nur echte Richtungswechsel (hell→dunkel→hell, typisch für durchziehende
+  Wolken) – eine gleichmäßig ansteigende/fallende Rampe (z. B. Sonnenauf-/-untergang)
+  löst den Alternativmodus daher nicht mehr fälschlich aus, selbst wenn sie aus vielen
+  großen Schritten in derselben Richtung besteht.
 * **Helligkeits-Ersatzsensor für Fassaden ohne eigenen Sensor**: Fassaden ohne eigenen
   Helligkeitssensor können optional (je Fassade zuschaltbar) den hier konfigurierten
   Wolken-/Helligkeitssensor mit eigenen Ein-/Aus-Schwellen nutzen (Sonnig-Schwelle als
