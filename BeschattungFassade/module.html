@@ -312,7 +312,7 @@
         return 'Ein >' + num(d.brightnessOn, 0) + ' · Aus <' + num(d.brightnessOff, 0);
       },
       ok: function (d) { return d.brightnessOK; },
-      overridden: function (d) { return d.decisionPath === 'cloudMode'; },
+      overridden: function (d) { return d.decisionPath === 'cloudMode' && !d.cloudModeOwnSensorActive; },
       bar: function (d) {
         if (d.brightness === null || d.brightnessOn === null) { return null; }
         var hi = Math.max(d.brightness, d.brightnessOn, d.brightnessOff) * 1.3 || 1;
