@@ -34,6 +34,11 @@
                     "caption": "No brightness sensor above: fall back to the central instance's cloud/brightness sensor"
                 },
                 {
+                    "type": "CheckBox",
+                    "name": "CloudModeOwnSensorOverride",
+                    "caption": "During alternative/cloud mode, also shade when THIS facade's own brightness sensor is clearly bright (in addition to the central sunshine percentage; requires the brightness sensor above)"
+                },
+                {
                     "type": "SelectVariable",
                     "name": "OutdoorTempID",
                     "caption": "Outdoor temperature (optional)"

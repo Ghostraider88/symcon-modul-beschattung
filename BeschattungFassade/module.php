@@ -46,6 +46,7 @@ class BeschattungFassade extends IPSModuleStrict
         // --- Sensoren (optional; leer = Bedingung wird ignoriert) ---
         $this->RegisterPropertyInteger('BrightnessID', 0);
         $this->RegisterPropertyBoolean('UseCentralBrightnessFallback', false); // bei fehlendem eigenem Sensor auf zentralen Wolkensensor zurückfallen
+        $this->RegisterPropertyBoolean('CloudModeOwnSensorOverride', false); // im Alternativmodus zusätzlich per eigenem Sensor beschatten dürfen
         $this->RegisterPropertyInteger('OutdoorTempID', 0);
         $this->RegisterPropertyInteger('IndoorTempID', 0);
 
@@ -405,12 +406,21 @@ class BeschattungFassade extends IPSModuleStrict
             $decisionPath = 'allAround';
         } elseif ($central['cloudMode']) {
             // Alternativmodus: die instantane, durch Wolken flackernde Helligkeits-
-            // Hysterese ist hier KEIN Gate mehr. Stattdessen ersetzt der über ein
-            // Zeitfenster gemittelte Sonnenscheinanteil den Helligkeits-Aspekt.
+            // Hysterese ist hier grundsätzlich KEIN Gate mehr. Stattdessen ersetzt der
+            // über ein Zeitfenster gemittelte Sonnenscheinanteil den Helligkeits-Aspekt.
+            // Optional (Property `CloudModeOwnSensorOverride`, nur mit echtem eigenem
+            // Sensor wirksam) darf zusätzlich beschattet werden, wenn DIESE Fassade
+            // gerade eindeutig hell ist - auch wenn der zentrale Sonnenanteil (noch)
+            // unter 50 % liegt, z. B. weil der zentrale Sensor anders ausgerichtet ist
+            // oder der Rollierende Durchschnitt einer plötzlichen Aufhellung hinterherhinkt.
             $decisionPath = 'cloudMode';
             if ($temperatureOK) {
-                $shade = $sunInWindow && ($central['sunPercentage'] > 50);
-                $reason = sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
+                $ownSensorBright = $this->cloudModeOwnSensorOverrideActive() && $brightnessOK;
+                $sunEnough = $central['sunPercentage'] > 50;
+                $shade = $sunInWindow && ($sunEnough || $ownSensorBright);
+                $reason = ($ownSensorBright && !$sunEnough)
+                    ? sprintf('Φ Alternativmodus (Sonne %.0f%%, eigener Sensor hell)', $central['sunPercentage'])
+                    : sprintf('Φ Alternativmodus (Sonne %.0f%%)', $central['sunPercentage']);
             } else {
                 $reason = '⚠️ Schwellwerte nicht erfüllt';
             }
@@ -727,6 +737,21 @@ class BeschattungFassade extends IPSModuleStrict
             return false;
         }
         return (float) $value < (float) $threshold;
+    }
+
+    /**
+     * Ob im Alternativmodus zusätzlich der eigene Helligkeitssensor dieser
+     * Fassade beschatten darf (Property `CloudModeOwnSensorOverride`). Nur
+     * mit einem echten, direkt konfigurierten Sensor sinnvoll: ohne eigenen
+     * Sensor wäre `brightnessOK` immer `true` (Bedingung ignoriert) und würde
+     * den ganzen Zweck des Alternativmodus für sensorlose Fassaden aushebeln.
+     */
+    private function cloudModeOwnSensorOverrideActive(): bool
+    {
+        if (!$this->ReadPropertyBoolean('CloudModeOwnSensorOverride')) {
+            return false;
+        }
+        return $this->variableValid($this->ReadPropertyInteger('BrightnessID'));
     }
 
     /** Gemittelte Außentemperatur (Tagesmaxima der letzten N Tage), sonst aktueller Wert. */
